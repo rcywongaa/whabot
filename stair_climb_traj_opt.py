@@ -28,8 +28,8 @@ m_3 = m_2 # mass of l_2 - l_3 motor
 m_w = 4.0 # mass of wheel
 w_r = 0.1 # wheel radius
 I_w = 1.0/2.0*m_w*(w_r**2)
-NUM_TIME_STEPS = 100
-TIME_INTERVAL = 0.005
+NUM_TIME_STEPS = 500
+TIME_INTERVAL = 0.001
 
 def findTheta1(theta2, theta3, theta4):
     y = theta4*w_r
@@ -166,9 +166,13 @@ if __name__ == "__main__":
         if method == Method.DIRECT_TRANSCRIPTION:
             state_over_time[i+1] = mp.NewContinuousVariables(8, "state_%d" % (i+1))
             # pdb.set_trace()
+            for j in range(3): # Constrain theta1, theta2, theta3
+                mp.AddConstraint(state_over_time[i+1][j] >= 0.0)
+                mp.AddConstraint(state_over_time[i+1][j] <= np.pi)
             for j in range(8):
                 mp.AddConstraint(state_over_time[i+1][j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
                 mp.AddConstraint(state_over_time[i+1][j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
+
         elif method == Method.SHOOTING:
             state_over_time[i+1] = state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i])
 
