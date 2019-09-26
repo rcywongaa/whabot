@@ -11,6 +11,12 @@ from sympy import init_printing, pprint, pretty
 import yaml
 import pdb
 
+import pydrake.symbolic
+
+custom_trig = [{
+        'sin': pydrake.symbolic.sin,
+        'cos': pydrake.symbolic.cos}, 'numpy']
+
 with open("constants.yaml", 'r') as stream:
     constants = yaml.safe_load(stream)
 
@@ -132,13 +138,16 @@ theta2_dd_eom = theta_dd_eom[0][theta2_dd].subs(substitutions)
 theta3_dd_eom = theta_dd_eom[0][theta3_dd].subs(substitutions)
 theta1_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
-        theta1_dd_eom)
+        theta1_dd_eom,
+        modules=custom_trig)
 theta2_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
-        theta2_dd_eom)
+        theta2_dd_eom,
+        modules=custom_trig)
 theta3_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
-        theta3_dd_eom)
+        theta3_dd_eom,
+        modules=custom_trig)
 # print("Lambdified in " + str(time.time() - tic) + "s")
 
 def calc_theta1_dd(
