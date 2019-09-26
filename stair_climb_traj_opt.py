@@ -28,6 +28,7 @@ w_r = 0.1 # wheel radius
 I_w = 1.0/2.0*m_w*(w_r**2)
 NUM_TIME_STEPS = 20
 TIME_INTERVAL = 0.01
+# F_f <= COEFF_FRICTION * F_n
 COEFF_FRICTION = 0.6
 
 def calc_theta1_dd(state, u):
@@ -103,7 +104,7 @@ def findTau1(theta1, theta2, theta3):
     )
     return tau1
 
-def find_I_wrt_1(theta1, theta2, theta3):
+def findFrontWheelPosition(theta1, theta2, theta3):
     theta12 = theta2 + theta1
     theta123 = theta3 + theta12
     s1 = sin(theta1)
@@ -117,25 +118,9 @@ def find_I_wrt_1(theta1, theta2, theta3):
     c12 = cos(theta12)
     c123 = cos(theta123)
 
-    I_2 = m_2*(l_1**2)
-    I_3 = m_3*((l_1*s1 + l_2*s12)**2 + (l_1*c1 + l_2*c12)**2)
-    I_4 = m_w*((l_1*s1 + l_2*s12 + l_3*s123)**2 + (l_1*c1 + l_2*c12 + l_3*c123)**2)
-    return I_2 + I_3 + I_4
-
-def find_I_wrt_2(theta2, theta3):
-    s2 = sin(theta2)
-    s3 = sin(theta3)
-    s23 = sin(theta2 + theta3)
-    c2 = cos(theta2)
-    c3 = cos(theta3)
-    c23 = cos(theta2 + theta3)
-
-    I_3 = m_3*(l_2**2)
-    I_4 = m_w*((l_2*s2 + l_3*s23)**2 + (l_2*c2 + l_3*c23)**2)
-    return I_3 + I_4
-
-def find_I_wrt_3():
-    return m_w*(l_3**2)
+    x = l_1*c1 + l_2*c12 + l_3*c123
+    y = l_1*s1 + l_2*s12 + l_3*s123
+    return (x, y)
 
 def derivs(state, tau234):
     tau2 = tau234[0]
@@ -187,34 +172,61 @@ def findJacobian(theta1, theta2, theta3):
     return J
 
 if __name__ == "__main__":
-    x = 0.92
     mp = MathematicalProgram()
     state_over_time = np.zeros(shape=(NUM_TIME_STEPS, 8), dtype=pydrake.symbolic.Expression)
-
-    state_over_time[0] = mp.NewContinuousVariables(8, "state_0")
-
     tau234_over_time = np.zeros(shape=(NUM_TIME_STEPS, 3), dtype=pydrake.symbolic.Variable)
+
+    initial_state = mp.NewContinuousVariables(8, "state_0")
+
+    # Constrain initial velocity to be 0
+    for j in range(4, 8):
+        mp.AddConstraint(initial_state[j] <= 0.0)
+        mp.AddConstraint(initial_state[j] >= 0.0)
+
+    # Constrain initial theta to be between 0 ~ 180
+    for j in range(0, 4):
+        mp.AddConstraint(initial_state[j] >= 0.0)
+        mp.AddConstraint(initial_state[j] <= np.pi)
+
+    # Constrain initial theta4 (i.e. front wheel) to be 0.0
+    mp.AddConstraint(initial_state[3] <= 0.0)
+    mp.AddConstraint(initial_state[3] >= 0.0)
+
+    # Constrain initial front wheel position y position to be 0.0
+    initial_wheel_position = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
+    mp.AddConstraint(initial_wheel_position[1] <= 0.0)
+    mp.AddConstraint(initial_wheel_position[1] >= 0.0)
+
+    state_over_time[0] = initial_state
+
     for i in range(NUM_TIME_STEPS-1):
         print("Adding constraints for t = " + str(i))
         tau234 = mp.NewContinuousVariables(3, "tau234_%d" % i)
         tau234_over_time[i] = tau234
 
-        state_over_time[i+1] = mp.NewContinuousVariables(8, "state_%d" % (i+1))
+        next_state = mp.NewContinuousVariables(8, "state_%d" % (i+1))
 
-        theta1 = state_over_time[i+1][0]
-        theta2 = state_over_time[i+1][1]
-        theta3 = state_over_time[i+1][2]
+        theta1 = next_state[0]
+        theta2 = next_state[1]
+        theta3 = next_state[2]
         tau1 = findTau1(theta1, theta2, theta3)
         J = findJacobian(theta1, theta2, theta3)
         tau123 = np.array([tau1, tau234[0], tau234[2]])
+
         mp.AddConstraint(COEFF_FRICTION*J.dot(tau123)[0] <= -w_r*tau234[2])
 
+        # Constrain no x motion of front wheel
+        mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] <= initial_wheel_position[0])
+        mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] >= initial_wheel_position[0])
+
         for j in range(3): # Constrain theta1, theta2, theta3
-            mp.AddConstraint(state_over_time[i+1][j] >= 0.0)
-            mp.AddConstraint(state_over_time[i+1][j] <= np.pi)
+            mp.AddConstraint(next_state[j] >= 0.0)
+            mp.AddConstraint(next_state[j] <= np.pi)
         for j in range(8):
-            mp.AddConstraint(state_over_time[i+1][j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
-            mp.AddConstraint(state_over_time[i+1][j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
+            mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
+            mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
+
+        state_over_time[i+1] = next_state
 
     mp.AddCost(0.01 * tau234_over_time[:,0].dot(tau234_over_time[:,0]))
     mp.AddCost(0.01 * tau234_over_time[:,1].dot(tau234_over_time[:,1]))
@@ -222,19 +234,10 @@ if __name__ == "__main__":
     mp.AddCost(-(state_over_time[:,0].dot(state_over_time[:,0])))
     target_theta4 = STAIR_HEIGHT / w_r
 
-    # Constraint initial and final velocity to be 0
+    # Constrain final velocity to be 0
     for j in range(4, 8):
-        mp.AddConstraint(state_over_time[0, j] <= 0.0)
-        mp.AddConstraint(state_over_time[0, j] >= 0.0)
         mp.AddConstraint(state_over_time[-1, j] <= 0.0)
         mp.AddConstraint(state_over_time[-1, j] >= 0.0)
-
-    for j in range(0, 4):
-        mp.AddConstraint(state_over_time[0, j] >= 0.0)
-        mp.AddConstraint(state_over_time[0, j] <= np.pi)
-
-    mp.AddConstraint(state_over_time[0, 3] <= 0.0)
-    mp.AddConstraint(state_over_time[0, 3] >= 0.0)
 
     mp.AddConstraint(state_over_time[-1, 3] <= target_theta4)
     mp.AddConstraint(state_over_time[-1, 3] >= target_theta4)
