@@ -8,6 +8,14 @@ from enum import Enum
 import time
 import pdb
 
+from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
+from pydrake.lcm import DrakeLcm
+from pydrake.multibody.tree import UniformGravityFieldElement
+from pydrake.multibody.plant import MultibodyPlant, AddMultibodyPlantSceneGraph
+from pydrake.multibody.parsing import Parser
+from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.analysis import Simulator
+
 import eom
 
 STAIR_HEIGHT = 0.3
@@ -251,3 +259,36 @@ if __name__ == "__main__":
     torque_over_time = result.GetSolution(tau234_over_time)
     state_over_time = result.GetSolution(state_over_time)
     pdb.set_trace()
+
+    file_name = "res/stair_climb.sdf"
+    builder = DiagramBuilder()
+    stair_climb, scene_graph = AddMultibodyPlantSceneGraph(builder)
+    # stair_climb.RegisterAsSourceForSceneGraph(scene_graph)
+    Parser(plant=stair_climb).AddModelFromFile(file_name)
+    stair_climb.AddForceElement(UniformGravityFieldElement())
+    stair_climb.Finalize()
+
+    ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
+    diagram = builder.Build()
+
+    diagram_context = diagram.CreateDefaultContext()
+    stair_climb_context = diagram.GetMutableSubsystemContext(stair_climb, diagram_context)
+
+    stair_climb_context.FixInputPort(stair_climb.get_actuation_input_port().get_index(), [0, 0, 0, 0, 0])
+
+    theta1 = stair_climb.GetJointByName("theta1")
+    theta2 = stair_climb.GetJointByName("theta2")
+    theta3 = stair_climb.GetJointByName("theta3")
+    theta4 = stair_climb.GetJointByName("theta4")
+    phi = stair_climb.GetJointByName("phi")
+    theta1.set_angle(context=stair_climb_context, angle=0.0)
+    theta2.set_angle(context=stair_climb_context, angle=0.0)
+    theta3.set_angle(context=stair_climb_context, angle=0.0)
+    theta4.set_angle(context=stair_climb_context, angle=0.0)
+    phi.set_angle(context=stair_climb_context, angle=0.0)
+
+    simulator = Simulator(diagram, diagram_context)
+    simulator.set_publish_every_time_step(False)
+    simulator.set_target_realtime_rate(0.1)
+    simulator.Initialize()
+    simulator.AdvanceTo(1.0)

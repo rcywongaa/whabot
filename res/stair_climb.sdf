@@ -1,0 +1,299 @@
+<?xml version='1.0' ?>
+
+
+<sdf version='1.6'>
+    <model name='Whabot'>
+
+        <link name='back_wheel'>
+            <pose>0 0 0.1 0 0 0</pose>
+            <inertial>
+                <mass>4.0</mass>
+                <inertia>
+                    <ixx>0.010833333333333335</ixx>
+                    <iyy>0.020000000000000004</iyy>
+                    <izz>0.010833333333333335</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+
+            <visual name='vis_back_wheel'>
+                <pose>0 0 0 1.570795 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.1</radius>
+                        <length>0.05</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='link1'>
+            <pose>0 0 0.1 0 0 0</pose>
+            <inertial>
+                <mass>0.1</mass>
+                <inertia>
+                    <ixx>0.005333333333333334</ixx>
+                    <iyy>0.005333333333333334</iyy>
+                    <izz>1.0e-20</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='link1_vis'>
+                <pose>0 0 0.4 0 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.8</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='motor1'>
+            <pose>0 0 0.9 0 0 0</pose>
+            <inertial>
+                <mass>0.4</mass>
+                <inertia>
+                    <ixx>9.333333333333334e-05</ixx>
+                    <iyy>8.0e-05</iyy>
+                    <izz>9.333333333333334e-05</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='vis_motor1'>
+                <pose>0 0 0 1.570795 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.04</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='link2'>
+            <pose>0 0 0.9 0 0 0</pose>
+            <inertial>
+                <mass>0.1</mass>
+                <inertia>
+                    <ixx>0.0008533333333333333</ixx>
+                    <iyy>0.0008533333333333333</iyy>
+                    <izz>1.0e-20</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='link2_vis'>
+                <pose>0 0 0.16 0 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.32</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='motor2'>
+            <pose>0 0 1.22 0 0 0</pose>
+            <inertial>
+                <mass>0.4</mass>
+                <inertia>
+                    <ixx>9.333333333333334e-05</ixx>
+                    <iyy>8.0e-05</iyy>
+                    <izz>9.333333333333334e-05</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='vis_motor2'>
+                <pose>0 0 0 1.570795 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.04</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='link3'>
+            <pose>0 0 1.22 0 0 0</pose>
+            <inertial>
+                <mass>0.1</mass>
+                <inertia>
+                    <ixx>0.005333333333333334</ixx>
+                    <iyy>0.005333333333333334</iyy>
+                    <izz>1.0e-20</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='link3_vis'>
+                <pose>0 0 0.4 0 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.8</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='front_wheel'>
+            <pose>0 0 2.02 1.570795 0 0</pose>
+            <inertial>
+                <mass>4.0</mass>
+                <inertia>
+                    <ixx>0.010833333333333335</ixx>
+                    <iyy>0.020000000000000004</iyy>
+                    <izz>0.010833333333333335</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='front_wheel_vis'>
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.1</radius>
+                        <length>0.05</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='motorb'>
+            <pose>0 0 1.06 0 0 0</pose>
+            <inertial>
+                <mass>0.4</mass>
+                <inertia>
+                    <ixx>0.00014583333333333335</ixx>
+                    <iyy>0.00012500000000000003</iyy>
+                    <izz>0.00014583333333333335</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='vis_motorb'>
+                <pose>0 0 0 1.570795 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.025</radius>
+                        <length>0.05</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='linkb'>
+            <pose>0 0 1.06 0 0 0</pose>
+            <inertial>
+                <mass>0.1</mass>
+                <inertia>
+                    <ixx>1.0e-20</ixx>
+                    <iyy>0.003</iyy>
+                    <izz>0.003</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='linkb_vis'>
+                <pose>-0.3 0 0 0 -1.570795 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.6</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='battery'>
+            <pose>-0.6 0 1.06 0 0 0</pose>
+            <inertial>
+                <mass>4.0</mass>
+                <inertia>
+                    <ixx>1.0e-20</ixx>
+                    <iyy>1.0e-20</iyy>
+                    <izz>1.0e-20</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='battery_vis'>
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <sphere>
+                        <radius>0.05</radius>
+                    </sphere>
+                </geometry>
+            </visual>
+        </link>
+
+        <joint name='fix_back_wheel' type='fixed'>
+            <parent>world</parent>
+            <child>back_wheel</child>
+        </joint>
+
+        <joint name='theta1' type='revolute'>
+            <parent>back_wheel</parent>
+            <child>link1</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='motor1_fix' type='fixed'>
+            <parent>link1</parent>
+            <child>motor1</child>
+        </joint>
+
+        <joint name='theta2' type='revolute'>
+            <parent>motor1</parent>
+            <child>link2</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='motor2_fix' type='fixed'>
+            <parent>link2</parent>
+            <child>motor2</child>
+        </joint>
+
+        <joint name='theta3' type='revolute'>
+            <parent>motor2</parent>
+            <child>link3</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='theta4' type='revolute'>
+            <parent>link3</parent>
+            <child>front_wheel</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='motorb_fix' type='fixed'>
+            <parent>link2</parent>
+            <child>motorb</child>
+        </joint>
+
+        <joint name='battery_fix' type='fixed'>
+            <parent>linkb</parent>
+            <child>battery</child>
+        </joint>
+
+        <joint name='phi' type='revolute'>
+            <parent>motorb</parent>
+            <child>linkb</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 0 1 0 0 0</xyz>
+            </axis>
+        </joint>
+
+    </model>
+</sdf>
+

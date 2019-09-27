@@ -4,9 +4,9 @@ tic = time.time()
 from sympy.physics.vector import dynamicsymbols, ReferenceFrame, dot
 from sympy.utilities.lambdify import lambdify
 from sympy import diff, Symbol, sin, cos, pi, Matrix
-from sympy import Eq, solve
+from sympy import Eq, solve, trigsimp
 from sympy import init_printing, pprint, pretty
-# print("Imported sympy in " + str(time.time() - tic) + "s")
+import_sympy_duration = time.time() - tic
 
 import yaml
 import pdb
@@ -17,7 +17,7 @@ custom_trig = [{
         'sin': pydrake.symbolic.sin,
         'cos': pydrake.symbolic.cos}, 'numpy']
 
-with open("constants.yaml", 'r') as stream:
+with open("res/constants.yaml", 'r') as stream:
     constants = yaml.safe_load(stream)
 
 g = 9.81
@@ -53,12 +53,17 @@ theta_d_0 = [theta1_d_0, theta2_d_0, theta3_d_0]
 # We want to substitute theta1_d before theta1 because Derivative(theta1, t) != Derivative(theta1_0, t)
 # Substitution will fail if we substituted theta1 first
 substitutions = [
+    (theta1_dd, theta1_dd_0),
+    (theta2_dd, theta2_dd_0),
+    (theta3_dd, theta3_dd_0),
     (theta1_d, theta1_d_0),
     (theta2_d, theta2_d_0),
     (theta3_d, theta3_d_0),
     (theta1, theta1_0),
     (theta2, theta2_0),
     (theta3, theta3_0)]
+
+theta_dd_0 = [theta1_dd_0, theta2_dd_0, theta3_dd_0]
 
 F = Symbol('F')
 tau1 = Symbol('tau1')
@@ -120,22 +125,34 @@ L = KE - PE
 
 lhs = (Matrix([L]).jacobian(theta_d).diff(t) - Matrix([L]).jacobian(theta)).T
 
-rhs1 = F*(l1*s1 + l2*s12 + l3*s123)
-rhs2 = tau2 + F*(l2*s12 + l3*s123)
-rhs3 = tau3 + F*(l3*s123)
+J = Matrix([
+    [-l1*s1 - l2*s12 - l3*s123, -l2*s12 - l3*s123, -l3*s123],
+    [l1*c1 + l2*c12 + l3*c123, l2*c12 + l3*c123, l3*c123]])
+
+F_t = J.dot(Matrix([tau1, tau2, tau3])) # Force due to torques
+F_x = -F_t[0] # Normal reaction of wall
+F_y = F + F_t[1] # Vertical force due to torques + input force (from wheel)
+
+rhs1 = F_y*(l1*s1 + l2*s12 + l3*s123) + F_x*(l1*c1 + l2*c12 + l3*c123)
+rhs2 = tau2 + F_y*(l2*s12 + l3*s123) + F_x*(l2*c12 + l3*c123)
+rhs3 = tau3 + F_y*(l3*s123) + F_x*(l3*c123)
 rhs = Matrix([rhs1, rhs2, rhs3])
 
-eom = Eq(lhs, rhs)
-# print("Lagrange formulated in " + str(time.time() - tic) + "s")
+eom = Eq(lhs, rhs).subs(substitutions)
+formulate_lagrange_duration = time.time() - tic
+
+# tic = time.time()
+# eom = trigsimp(eom, method="fu") # Simplify by minimizing trigonometric functions
+# simplify_duration = time.time() - tic
 
 tic = time.time()
-theta_dd_eom = solve(eom, theta_dd, dict=True, simplify=False)
-# print("EOM solved in " + str(time.time() - tic) + "s")
+theta_dd_eom = solve(eom, theta_dd_0, dict=True, simplify=False, rational=False)
+solve_eom_duration = time.time() - tic
 
 tic = time.time()
-theta1_dd_eom = theta_dd_eom[0][theta1_dd].subs(substitutions)
-theta2_dd_eom = theta_dd_eom[0][theta2_dd].subs(substitutions)
-theta3_dd_eom = theta_dd_eom[0][theta3_dd].subs(substitutions)
+theta1_dd_eom = theta_dd_eom[0][theta1_dd_0]
+theta2_dd_eom = theta_dd_eom[0][theta2_dd_0]
+theta3_dd_eom = theta_dd_eom[0][theta3_dd_0]
 theta1_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta1_dd_eom,
@@ -148,7 +165,7 @@ theta3_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta3_dd_eom,
         modules=custom_trig)
-# print("Lambdified in " + str(time.time() - tic) + "s")
+lambdify_duration = time.time() - tic
 
 def calc_theta1_dd(
         theta1, theta2, theta3,
@@ -178,8 +195,16 @@ def calc_theta3_dd(
             (tau1, tau2, tau3, F))
 
 if __name__ == "__main__":
-    tic = time.time()
+    print("Imported sympy in " + str(import_sympy_duration) + "s")
+    print("Lagrange formulated in " + str(formulate_lagrange_duration) + "s")
+    # print("Simplify in " + str(simplify_duration) + "s")
+    print("EOM solved in " + str(solve_eom_duration) + "s")
+    print("Lambdified in " + str(lambdify_duration) + "s")
+
     from random import random
+
+    print(theta1_dd_eom)
+    tic = time.time()
     for i in range(100):
         theta1_dd_lambd(
                 (random(), random(), random()),
