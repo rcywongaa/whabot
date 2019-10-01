@@ -297,7 +297,7 @@ if __name__ == "__main__":
             RigidTransform([0.0, 0.0, 0.0]),
             HalfSpace(),
             "GroundVisual",
-            np.array([0.0, 0.0, 0.0, 0.5])) # Color
+            np.array([0.5, 0.5, 0.5, 0.5])) # Color
 
     stair_climb.RegisterCollisionGeometry(
             stair_climb.world_body(),
