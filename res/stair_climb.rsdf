@@ -76,14 +76,14 @@ BATTERY_RADIUS = constants['battery_radius']
             <inertial>
                 <mass><%= LINK1_MASS %></mass>
                 <inertia>
-                    <ixx><%= 1.0/12.0*LINK1_MASS*LINK1_LENGTH**2 %></ixx>
+                    <ixx>1.0e-20</ixx>
                     <iyy><%= 1.0/12.0*LINK1_MASS*LINK1_LENGTH**2 %></iyy>
-                    <izz>1.0e-20</izz>
+                    <izz><%= 1.0/12.0*LINK1_MASS*LINK1_LENGTH**2 %></izz>
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
             <visual name='link1_vis'>
-                <pose>0 0 <%= LINK1_LENGTH/2.0%> 0 0 0</pose>
+                <pose><%= LINK1_LENGTH/2.0%> 0 0 0 <%= PI/2.0 %> 0</pose>
                 <geometry>
                     <cylinder>
                         <radius><%= LINK1_RADIUS %></radius>
@@ -94,7 +94,7 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='motor1'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= MOTOR1_MASS %></mass>
                 <inertia>
@@ -116,18 +116,18 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='link2'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= LINK2_MASS %></mass>
                 <inertia>
-                    <ixx><%= 1.0/12.0*LINK2_MASS*LINK2_LENGTH**2 %></ixx>
+                    <ixx>1.0e-20</ixx>
                     <iyy><%= 1.0/12.0*LINK2_MASS*LINK2_LENGTH**2 %></iyy>
-                    <izz>1.0e-20</izz>
+                    <izz><%= 1.0/12.0*LINK2_MASS*LINK2_LENGTH**2 %></izz>
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
             <visual name='link2_vis'>
-                <pose>0 0 <%= LINK2_LENGTH/2.0%> 0 0 0</pose>
+                <pose><%= LINK2_LENGTH/2.0%> 0 0 0 <%= PI/2.0 %> 0</pose>
                 <geometry>
                     <cylinder>
                         <radius><%= LINK2_RADIUS %></radius>
@@ -138,7 +138,7 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='motor2'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH + LINK2_LENGTH %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= MOTOR2_MASS %></mass>
                 <inertia>
@@ -160,18 +160,18 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='link3'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH + LINK2_LENGTH %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= LINK3_MASS %></mass>
                 <inertia>
-                    <ixx><%= 1.0/12.0*LINK3_MASS*LINK3_LENGTH**2 %></ixx>
+                    <ixx>1.0e-20</ixx>
                     <iyy><%= 1.0/12.0*LINK3_MASS*LINK3_LENGTH**2 %></iyy>
-                    <izz>1.0e-20</izz>
+                    <izz><%= 1.0/12.0*LINK3_MASS*LINK3_LENGTH**2 %></izz>
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
             <visual name='link3_vis'>
-                <pose>0 0 <%= LINK3_LENGTH/2.0%> 0 0 0</pose>
+                <pose><%= LINK3_LENGTH/2.0%> 0 0 0 <%= PI/2.0 %> 0</pose>
                 <geometry>
                     <cylinder>
                         <radius><%= LINK3_RADIUS %></radius>
@@ -182,7 +182,7 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='front_wheel'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH + LINK2_LENGTH + LINK3_LENGTH %> <%= PI/2.0 %> 0 0</pose>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH + LINK3_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= WHEEL_MASS %></mass>
                 <inertia>
@@ -193,7 +193,7 @@ BATTERY_RADIUS = constants['battery_radius']
                 </inertia>
             </inertial>
             <visual name='front_wheel_vis'>
-                <pose>0 0 0 0 0 0</pose>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
                 <geometry>
                     <cylinder>
                         <radius><%= WHEEL_RADIUS %></radius>
@@ -201,21 +201,30 @@ BATTERY_RADIUS = constants['battery_radius']
                     </cylinder>
                 </geometry>
             </visual>
+            <collision name='front_wheel_col'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= WHEEL_RADIUS %></radius>
+                        <length><%= WHEEL_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </collision>
         </link>
 
         <link name='motorb'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= MOTORB_MASS %></mass>
                 <inertia>
-                    <ixx><%= 1.0/12.0*MOTORB_MASS*(3.0*MOTORB_RADIUS**2 + MOTORB_THICKNESS**2) %></ixx>
-                    <iyy><%= 1.0/2.0 * MOTORB_MASS * MOTORB_RADIUS**2 %></iyy>
+                    <ixx><%= 1.0/2.0 * MOTORB_MASS * MOTORB_RADIUS**2 %></ixx>
+                    <iyy><%= 1.0/12.0*MOTORB_MASS*(3.0*MOTORB_RADIUS**2 + MOTORB_THICKNESS**2) %></iyy>
                     <izz><%= 1.0/12.0*MOTORB_MASS*(3.0*MOTORB_RADIUS**2 + MOTORB_THICKNESS**2) %></izz>
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
             <visual name='vis_motorb'>
-                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <pose>0 0 0 0 <%= PI/2.0 %> 0</pose>
                 <geometry>
                     <cylinder>
                         <radius><%= MOTORB_RADIUS %></radius>
@@ -226,18 +235,18 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='linkb'>
-            <pose>0 0 <%= WHEEL_RADIUS + LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= LINKB_MASS %></mass>
                 <inertia>
-                    <ixx>1.0e-20</ixx>
+                    <ixx><%= 1.0/12.0*LINKB_MASS*LINKB_LENGTH**2 %></ixx>
                     <iyy><%= 1.0/12.0*LINKB_MASS*LINKB_LENGTH**2 %></iyy>
-                    <izz><%= 1.0/12.0*LINKB_MASS*LINKB_LENGTH**2 %></izz>
+                    <izz>1.0e-20</izz>
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
             <visual name='linkb_vis'>
-                <pose><%= -LINKB_LENGTH/2.0 %> 0 0 0 <%= -PI/2.0 %> 0</pose>
+                <pose>0 0 <%= -LINKB_LENGTH/2.0 %> 0 0 0</pose>
                 <geometry>
                     <cylinder>
                         <radius><%= LINKB_RADIUS %></radius>
@@ -248,7 +257,7 @@ BATTERY_RADIUS = constants['battery_radius']
         </link>
 
         <link name='battery'>
-            <pose><%= -LINKB_LENGTH %> 0 <%= WHEEL_RADIUS + LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 0 0</pose>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 <%= -LINKB_LENGTH + WHEEL_RADIUS %> 0 0 0</pose>
             <inertial>
                 <mass><%= BATTERY_MASS %></mass>
                 <inertia>
