@@ -15,8 +15,7 @@
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
-
-            <visual name='vis_back_wheel'>
+            <visual name='back_wheel_vis'>
                 <pose>0 0 0 1.570795 0 0</pose>
                 <geometry>
                     <cylinder>
@@ -25,6 +24,15 @@
                     </cylinder>
                 </geometry>
             </visual>
+            <collision name='back_wheel_col'>
+                <pose>0 0 0 1.570795 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius>0.1</radius>
+                        <length>0.05</length>
+                    </cylinder>
+                </geometry>
+            </collision>
         </link>
 
         <link name='link1'>

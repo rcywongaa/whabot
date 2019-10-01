@@ -59,8 +59,7 @@ BATTERY_RADIUS = constants['battery_radius']
                     <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
                 </inertia>
             </inertial>
-
-            <visual name='vis_back_wheel'>
+            <visual name='back_wheel_vis'>
                 <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
                 <geometry>
                     <cylinder>
@@ -69,6 +68,15 @@ BATTERY_RADIUS = constants['battery_radius']
                     </cylinder>
                 </geometry>
             </visual>
+            <collision name='back_wheel_col'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= WHEEL_RADIUS %></radius>
+                        <length><%= WHEEL_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </collision>
         </link>
 
         <link name='link1'>
