@@ -2,23 +2,25 @@ import pydrake
 from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve
 from pydrake.symbolic import (sin, cos, Variable)
 import numpy as np
-# from numpy import sin, cos
 import math
 from enum import Enum
 import time
 import pdb
 
-from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
+from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph, HalfSpace, Box
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.tree import UniformGravityFieldElement
-from pydrake.multibody.plant import MultibodyPlant, AddMultibodyPlantSceneGraph
+from pydrake.multibody.plant import MultibodyPlant, AddMultibodyPlantSceneGraph, CoulombFriction
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
+from pydrake.math import RigidTransform
 
 import eom
 
-STAIR_HEIGHT = 0.3
+STEP_DEPTH = 0.4
+STEP_WIDTH = 0.5
+STEP_HEIGHT = 0.3
 HUB_MOTOR_MAX_TORQUE = 20
 MIN_NORMAL_REACTION = 4
 EPSILON = 1e-10
@@ -34,8 +36,8 @@ m_3 = m_2 # mass of l_2 - l_3 motor
 m_w = 4.0 # mass of wheel
 w_r = 0.1 # wheel radius
 I_w = 1.0/2.0*m_w*(w_r**2)
-NUM_TIME_STEPS = 20
-TIME_INTERVAL = 0.01
+NUM_TIME_STEPS = 200
+TIME_INTERVAL = 0.001
 # F_f <= COEFF_FRICTION * F_n
 COEFF_FRICTION = 0.6
 
@@ -209,9 +211,8 @@ if __name__ == "__main__":
 
     for i in range(NUM_TIME_STEPS-1):
         print("Adding constraints for t = " + str(i))
-        tau234 = mp.NewContinuousVariables(3, "tau234_%d" % i)
-        tau234_over_time[i] = tau234
 
+        tau234 = mp.NewContinuousVariables(3, "tau234_%d" % i)
         next_state = mp.NewContinuousVariables(8, "state_%d" % (i+1))
 
         theta1 = next_state[0]
@@ -230,17 +231,27 @@ if __name__ == "__main__":
         for j in range(3): # Constrain theta1, theta2, theta3
             mp.AddConstraint(next_state[j] >= 0.0)
             mp.AddConstraint(next_state[j] <= np.pi)
-        for j in range(8):
-            mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
-            mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234_over_time[i]))[j])
+        # for j in range(8):
+            # mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
+            # mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
 
+        def next_state_constraint(next_state):
+            # pdb.set_trace()
+            return state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234)
+
+        lb = np.array([0.0, 0.0, 0.0, -1000.0, -1000.0, -1000.0, -1000.0, -1000.0])
+        ub = np.array([np.pi, np.pi, np.pi, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0])
+
+        # mp.AddConstraint(next_state_constraint, lb, ub, next_state)
+
+        tau234_over_time[i] = tau234
         state_over_time[i+1] = next_state
 
     mp.AddCost(0.01 * tau234_over_time[:,0].dot(tau234_over_time[:,0]))
     mp.AddCost(0.01 * tau234_over_time[:,1].dot(tau234_over_time[:,1]))
     mp.AddCost(0.01 * tau234_over_time[:,2].dot(tau234_over_time[:,2]))
     mp.AddCost(-(state_over_time[:,0].dot(state_over_time[:,0])))
-    target_theta4 = STAIR_HEIGHT / w_r
+    target_theta4 = STEP_HEIGHT / w_r
 
     # Constrain final velocity to be 0
     for j in range(4, 8):
@@ -258,7 +269,7 @@ if __name__ == "__main__":
     print("is_success = " + str(is_success))
     torque_over_time = result.GetSolution(tau234_over_time)
     state_over_time = result.GetSolution(state_over_time)
-    pdb.set_trace()
+    # pdb.set_trace()
 
     file_name = "res/stair_climb.sdf"
     builder = DiagramBuilder()
@@ -266,6 +277,42 @@ if __name__ == "__main__":
     # stair_climb.RegisterAsSourceForSceneGraph(scene_graph)
     Parser(plant=stair_climb).AddModelFromFile(file_name)
     stair_climb.AddForceElement(UniformGravityFieldElement())
+
+    initial_state = state_over_time[0]
+    front_wheel_x, front_wheel_y = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
+    front_wheel_x = front_wheel_x.Evaluate()
+    front_wheel_y = front_wheel_y.Evaluate()
+    step = Box(STEP_DEPTH, STEP_WIDTH, STEP_HEIGHT)
+    step_pos = RigidTransform([front_wheel_x + w_r + STEP_DEPTH/2.0, 0.0, STEP_HEIGHT/2.0])
+
+    stair_climb.RegisterCollisionGeometry(
+            stair_climb.world_body(),
+            RigidTransform([0.0, 0.0, 0.0]),
+            HalfSpace(),
+            "GroundCollision",
+            CoulombFriction(0.6, 0.6))
+
+    stair_climb.RegisterVisualGeometry(
+            stair_climb.world_body(),
+            RigidTransform([0.0, 0.0, 0.0]),
+            HalfSpace(),
+            "GroundVisual",
+            np.array([0.0, 0.0, 0.0, 0.5])) # Color
+
+    stair_climb.RegisterCollisionGeometry(
+            stair_climb.world_body(),
+            step_pos,
+            step,
+            "StepCollision",
+            CoulombFriction(0.6, 0.6))
+
+    stair_climb.RegisterVisualGeometry(
+            stair_climb.world_body(),
+            step_pos,
+            step,
+            "StepVisual",
+            np.array([1.0, 1.0, 0.0, 1.0])) # Color
+
     stair_climb.Finalize()
 
     ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
@@ -281,11 +328,11 @@ if __name__ == "__main__":
     theta3 = stair_climb.GetJointByName("theta3")
     theta4 = stair_climb.GetJointByName("theta4")
     phi = stair_climb.GetJointByName("phi")
-    theta1.set_angle(context=stair_climb_context, angle=0.0)
-    theta2.set_angle(context=stair_climb_context, angle=0.0)
-    theta3.set_angle(context=stair_climb_context, angle=0.0)
-    theta4.set_angle(context=stair_climb_context, angle=0.0)
-    phi.set_angle(context=stair_climb_context, angle=0.0)
+    theta1.set_angle(context=stair_climb_context, angle=initial_state[0])
+    theta2.set_angle(context=stair_climb_context, angle=initial_state[1])
+    theta3.set_angle(context=stair_climb_context, angle=initial_state[2])
+    theta4.set_angle(context=stair_climb_context, angle=initial_state[3])
+    phi.set_angle(context=stair_climb_context, angle=initial_state[4])
 
     simulator = Simulator(diagram, diagram_context)
     simulator.set_publish_every_time_step(False)
