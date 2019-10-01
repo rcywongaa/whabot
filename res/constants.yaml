@@ -9,7 +9,7 @@ link1_length: 0.8
 link1_radius: 0.02
 
 motor1_mass: 0.4
-motor1_radius: 0.02
+motor1_radius: 0.025
 motor1_thickness: 0.04
 
 link2_mass: 0.1
@@ -17,7 +17,7 @@ link2_length: 0.32
 link2_radius: 0.02
 
 motor2_mass: 0.4
-motor2_radius: 0.02
+motor2_radius: 0.025
 motor2_thickness: 0.04
 
 link3_mass: 0.1
@@ -25,7 +25,7 @@ link3_length: 0.8
 link3_radius: 0.02
 
 motorb_mass: 0.4
-motorb_radius: 0.025
+motorb_radius: 0.04
 motorb_thickness: 0.05
 
 linkb_mass: 0.1
