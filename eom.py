@@ -13,9 +13,10 @@ import pdb
 
 import pydrake.symbolic
 
-custom_trig = [{
-        'sin': pydrake.symbolic.sin,
-        'cos': pydrake.symbolic.cos}, 'numpy']
+# custom_trig = [{
+        # 'sin': pydrake.symbolic.sin,
+        # 'cos': pydrake.symbolic.cos}, 'numpy']
+custom_trig = ['numpy']
 
 with open("res/constants.yaml", 'r') as stream:
     constants = yaml.safe_load(stream)

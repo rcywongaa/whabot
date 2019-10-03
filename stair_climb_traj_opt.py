@@ -1,6 +1,6 @@
 import pydrake
 from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve
-from pydrake.symbolic import (sin, cos, Variable)
+from pydrake.symbolic import Variable
 import numpy as np
 import math
 from enum import Enum
@@ -18,6 +18,8 @@ from pydrake.math import RigidTransform
 
 import eom
 
+STATE_SIZE = 8
+TORQUE_SIZE = 3
 STEP_DEPTH = 0.4
 STEP_WIDTH = 0.5
 STEP_HEIGHT = 0.3
@@ -59,7 +61,14 @@ def calc_theta3_dd(state, u):
             state[4], state[5], state[6],
             u[0], u[1], u[2], u[3]*w_r)
 
-def findTheta1(theta2, theta3, theta4):
+def findTheta1(theta2, theta3, theta4, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
+
     y = theta4*w_r
     s2 = sin(theta2)
     s3 = sin(theta3)
@@ -92,7 +101,13 @@ def findTheta1(theta2, theta3, theta4):
     theta1_2 = np.arccos(c1_2)
     return theta1_1, theta1_2
 
-def findTau1(theta1, theta2, theta3):
+def findTau1(theta1, theta2, theta3, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
     theta12 = theta2 + theta1
     theta123 = theta3 + theta12
     s1 = sin(theta1)
@@ -114,7 +129,14 @@ def findTau1(theta1, theta2, theta3):
     )
     return tau1
 
-def findFrontWheelPosition(theta1, theta2, theta3):
+def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
+
     theta12 = theta2 + theta1
     theta123 = theta3 + theta12
     s1 = sin(theta1)
@@ -132,7 +154,14 @@ def findFrontWheelPosition(theta1, theta2, theta3):
     y = l_1*s1 + l_2*s12 + l_3*s123
     return (x, y)
 
-def derivs(state, tau234):
+def derivs(state, tau234, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
+
     tau2 = tau234[0]
     tau3 = tau234[1]
     tau4 = tau234[2]
@@ -153,7 +182,7 @@ def derivs(state, tau234):
     c12 = cos(theta12)
     c123 = cos(theta123)
 
-    tau1 = findTau1(theta1, theta2, theta3)
+    tau1 = findTau1(theta1, theta2, theta3, is_symbolic)
     tau = np.array([tau1, tau2, tau3, tau4])
     state_d = np.zeros_like(state)
     state_d[0:4] = state[4:8]
@@ -163,7 +192,14 @@ def derivs(state, tau234):
     state_d[7] = tau234[2] / I_w
     return state_d
 
-def findJacobian(theta1, theta2, theta3):
+def findJacobian(theta1, theta2, theta3, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
+
     theta12 = theta2 + theta1
     theta123 = theta3 + theta12
     s1 = sin(theta1)
@@ -183,8 +219,8 @@ def findJacobian(theta1, theta2, theta3):
 
 if __name__ == "__main__":
     mp = MathematicalProgram()
-    state_over_time = np.zeros(shape=(NUM_TIME_STEPS, 8), dtype=pydrake.symbolic.Expression)
-    tau234_over_time = np.zeros(shape=(NUM_TIME_STEPS, 3), dtype=pydrake.symbolic.Variable)
+    state_over_time = np.zeros(shape=(NUM_TIME_STEPS, STATE_SIZE), dtype=pydrake.symbolic.Variable)
+    tau234_over_time = np.zeros(shape=(NUM_TIME_STEPS, TORQUE_SIZE), dtype=pydrake.symbolic.Variable)
 
     initial_state = mp.NewContinuousVariables(8, "state_0")
 
@@ -235,14 +271,19 @@ if __name__ == "__main__":
             # mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
             # mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
 
-        def next_state_constraint(next_state):
-            # pdb.set_trace()
-            return state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234)
+        def next_state_constraint(stacked):
+            next_state = stacked[0:STATE_SIZE]
+            current_state = stacked[STATE_SIZE:STATE_SIZE*2]
+            current_tau234 = stacked[STATE_SIZE*2:STATE_SIZE*2+TORQUE_SIZE]
+            desired_state = current_state + TIME_INTERVAL*derivs(current_state, current_tau234, is_symbolic = False)
+            diff = desired_state - next_state
+            ret = np.zeros_like(stacked)
+            ret[0:STATE_SIZE] = diff
+            return ret
 
-        lb = np.array([0.0, 0.0, 0.0, -1000.0, -1000.0, -1000.0, -1000.0, -1000.0])
-        ub = np.array([np.pi, np.pi, np.pi, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0])
-
-        # mp.AddConstraint(next_state_constraint, lb, ub, next_state)
+        stacked = np.concatenate([next_state, state_over_time[i], tau234])
+        bounds = np.ones(stacked.shape)*EPSILON
+        mp.AddConstraint(next_state_constraint, -bounds, bounds, stacked)
 
         tau234_over_time[i] = tau234
         state_over_time[i+1] = next_state
