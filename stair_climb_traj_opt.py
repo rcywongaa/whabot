@@ -293,15 +293,17 @@ if __name__ == "__main__":
     mp.AddCost(0.01 * tau234_over_time[:,1].dot(tau234_over_time[:,1]))
     mp.AddCost(0.01 * tau234_over_time[:,2].dot(tau234_over_time[:,2]))
     mp.AddCost(-(state_over_time[:,0].dot(state_over_time[:,0])))
-    target_theta4 = STEP_HEIGHT / w_r
 
+    final_state = state_over_time[-1]
     # Constrain final velocity to be 0
     for j in range(4, 8):
-        mp.AddConstraint(state_over_time[-1, j] <= 0.0)
-        mp.AddConstraint(state_over_time[-1, j] >= 0.0)
+        mp.AddConstraint(final_state[j] <= 0.0)
+        mp.AddConstraint(final_state[j] >= 0.0)
 
-    mp.AddConstraint(state_over_time[-1, 3] <= target_theta4)
-    mp.AddConstraint(state_over_time[-1, 3] >= target_theta4)
+    # Constrain final front wheel position
+    final_front_wheel_pos = findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
+    mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT)
+    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT)
 
     print("Begin solving...")
     t = time.time()
