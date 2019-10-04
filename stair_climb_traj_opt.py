@@ -25,7 +25,8 @@ STEP_WIDTH = 0.5
 STEP_HEIGHT = 0.3
 HUB_MOTOR_MAX_TORQUE = 20
 MIN_NORMAL_REACTION = 4
-EPSILON = 1e-10
+DISCRIMINANT_EPSILON = 1e-10
+DYNAMICS_EPSILON = 1e-3
 g = 9.81
 l_1 = 0.8
 l_2 = 0.32
@@ -91,9 +92,9 @@ def findTheta1(theta2, theta3, theta4, is_symbolic = True):
     c = y**2 - q_s**2
 
     discriminant = b**2 - 4*a*c
-    if abs(discriminant) < EPSILON:
+    if abs(discriminant) < DISCRIMINANT_EPSILON:
         discriminant = 0.0
-    # elif discriminant < -EPSILON:
+    # elif discriminant < -DISCRIMINANT_EPSILON:
         # continue
     c1_1 = (-b + np.sqrt(discriminant))/(2*a)
     c1_2 = (-b - np.sqrt(discriminant))/(2*a)
@@ -282,7 +283,7 @@ if __name__ == "__main__":
             return ret
 
         stacked = np.concatenate([next_state, state_over_time[i], tau234])
-        bounds = np.ones(stacked.shape)*EPSILON
+        bounds = np.ones(stacked.shape)*DYNAMICS_EPSILON
         mp.AddConstraint(next_state_constraint, -bounds, bounds, stacked)
 
         tau234_over_time[i] = tau234
