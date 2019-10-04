@@ -102,34 +102,6 @@ def findTheta1(theta2, theta3, theta4, is_symbolic = True):
     theta1_2 = np.arccos(c1_2)
     return theta1_1, theta1_2
 
-def findTau1(theta1, theta2, theta3, is_symbolic = True):
-    if is_symbolic:
-        sin = pydrake.symbolic.sin
-        cos = pydrake.symbolic.cos
-    else:
-        sin = np.sin
-        cos = np.cos
-    theta12 = theta2 + theta1
-    theta123 = theta3 + theta12
-    s1 = sin(theta1)
-    s2 = sin(theta2)
-    s3 = sin(theta3)
-    s12 = sin(theta12)
-    s123 = sin(theta123)
-    c1 = cos(theta1)
-    c2 = cos(theta2)
-    c3 = cos(theta3)
-    c12 = cos(theta12)
-    c123 = cos(theta123)
-
-    tau1 = (-l_1*c1*m_2*g # torque due to l_1 - l_2 link motor
-            + (-l_1*c1 + l_2/2.0*c12)*m_m*g # torque due to battery link motor
-            + (-l_1*c1 + l_2/2.0*c12 + l_b*cos(theta12 + np.pi/2.0))*m_b*g # torque due to battery
-            + (-l_1*c1 + l_2)*m_3*g # torque due to l_2 - l_3 link motor
-            + (-l_1*c1 + l_2 + l_3*c3)*m_w*g # torque due to front wheel
-    )
-    return tau1
-
 def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
     if is_symbolic:
         sin = pydrake.symbolic.sin
@@ -183,7 +155,7 @@ def derivs(state, tau234, is_symbolic = True):
     c12 = cos(theta12)
     c123 = cos(theta123)
 
-    tau1 = findTau1(theta1, theta2, theta3, is_symbolic)
+    tau1 = 0.0 # Unactuated
     tau = np.array([tau1, tau2, tau3, tau4])
     state_d = np.zeros_like(state)
     state_d[0:4] = state[4:8]
@@ -192,31 +164,6 @@ def derivs(state, tau234, is_symbolic = True):
     state_d[6] = calc_theta3_dd(state, tau)
     state_d[7] = tau234[2] / I_w
     return state_d
-
-def findJacobian(theta1, theta2, theta3, is_symbolic = True):
-    if is_symbolic:
-        sin = pydrake.symbolic.sin
-        cos = pydrake.symbolic.cos
-    else:
-        sin = np.sin
-        cos = np.cos
-
-    theta12 = theta2 + theta1
-    theta123 = theta3 + theta12
-    s1 = sin(theta1)
-    s2 = sin(theta2)
-    s3 = sin(theta3)
-    s12 = sin(theta12)
-    s123 = sin(theta123)
-    c1 = cos(theta1)
-    c2 = cos(theta2)
-    c3 = cos(theta3)
-    c12 = cos(theta12)
-    c123 = cos(theta123)
-    J = np.array([
-        [-l_1*s1 - l_2*s12 - l_3*s123, -l_2*s12 - l_3*s123, -l_3*s123],
-        [l_1*c1 + l_2*c12 + l_3*c123, l_2*c12 + l_3*c123, l_3*c123]])
-    return J
 
 if __name__ == "__main__":
     mp = MathematicalProgram()
@@ -255,11 +202,22 @@ if __name__ == "__main__":
         theta1 = next_state[0]
         theta2 = next_state[1]
         theta3 = next_state[2]
-        tau1 = findTau1(theta1, theta2, theta3)
-        J = findJacobian(theta1, theta2, theta3)
-        tau123 = np.array([tau1, tau234[0], tau234[2]])
+        theta4 = next_state[3]
+        theta1_d = next_state[4]
+        theta2_d = next_state[5]
+        theta3_d = next_state[6]
+        theta4_d = next_state[7]
+        tau1 = 0.0 # Unactuated
+        tau2 = tau234[0]
+        tau3 = tau234[1]
+        tau4 = tau234[2]
 
-        mp.AddConstraint(COEFF_FRICTION*J.dot(tau123)[0] <= -w_r*tau234[2])
+        # Add end force constraint
+        eom.calc_end_force_from_torques(
+                theta1, theta2, theta3,
+                theta1_d, theta2_d, theta3_d,
+                tau1, tau2, tau3)
+        # mp.AddConstraint(COEFF_FRICTION*J.dot(tau123)[0] <= -w_r*tau234[2]) # FIXME
 
         # Constrain no x motion of front wheel
         mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] <= initial_wheel_position[0])
