@@ -76,7 +76,7 @@ m1 = constants['wheel_mass']
 m2 = constants['motor1_mass']
 m3 = constants['motor2_mass']
 m4 = constants['wheel_mass']
-mb = constants['battery_mass']
+mb = constants['battery_mass'] # Note we treat battery motor and battery mass as a single mass
 l1 = constants['link1_length']
 l2 = constants['link2_length']
 l3 = constants['link3_length']
@@ -129,10 +129,27 @@ lhs = (Matrix([L]).jacobian(theta_d).diff(t) - Matrix([L]).jacobian(theta)).T
 J = Matrix([
     [-l1*s1 - l2*s12 - l3*s123, -l2*s12 - l3*s123, -l3*s123],
     [l1*c1 + l2*c12 + l3*c123, l2*c12 + l3*c123, l3*c123]])
+total_tau1 = (
+        tau1
+        - l1*c1*m2*g # torque due to motor1 mass
+        - (l1*c1 + l2*c12*m3*g) # torque due to motor2 mass
+        - (l1*c1 + l2/2.0*c12 + lb*cos(theta12+pi/2.0))*mb*g # torque due to battery mass
+        - (l1*c1 + l2*c12 + l3*c123)*m4*g)
+total_tau2 = (
+        tau2
+        - l2*c12*m3*g
+        - (l2/2.0*c12 + lb*cos(theta12+pi/2.0))*mb*g
+        - (l2*c12 + l3*c123)*m4*g)
 
-F_t = J.dot(Matrix([tau1, tau2, tau3])) # Force due to torques
+total_tau3 = (
+        tau3
+        - l3*c123*m4*g)
+
+F_t = J.dot(Matrix([total_tau1, total_tau2, total_tau3]))
+
+# External forces
 F_x = -F_t[0] # Normal reaction of wall
-F_y = F + F_t[1] # Vertical force due to torques + input force (from wheel)
+F_y = F # Vertical force input force (from wheel)
 
 rhs1 = F_y*(l1*s1 + l2*s12 + l3*s123) + F_x*(l1*c1 + l2*c12 + l3*c123)
 rhs2 = tau2 + F_y*(l2*s12 + l3*s123) + F_x*(l2*c12 + l3*c123)
