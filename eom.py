@@ -13,10 +13,10 @@ import pdb
 
 import pydrake.symbolic
 
-# custom_trig = [{
-        # 'sin': pydrake.symbolic.sin,
-        # 'cos': pydrake.symbolic.cos}, 'numpy']
-custom_trig = ['numpy']
+symbolic_trig = [{
+        'sin': pydrake.symbolic.sin,
+        'cos': pydrake.symbolic.cos}, 'numpy']
+numpy_trig = ['numpy']
 
 with open("res/constants.yaml", 'r') as stream:
     constants = yaml.safe_load(stream)
@@ -131,29 +131,54 @@ J = Matrix([
     [l1*c1 + l2*c12 + l3*c123, l2*c12 + l3*c123, l3*c123]])
 total_tau1 = (
         tau1
-        - l1*c1*m2*g # torque due to motor1 mass
-        - (l1*c1 + l2*c12*m3*g) # torque due to motor2 mass
-        - (l1*c1 + l2/2.0*c12 + lb*cos(theta12+pi/2.0))*mb*g # torque due to battery mass
-        - (l1*c1 + l2*c12 + l3*c123)*m4*g)
+        - P2.dot(j)*m2*g # torque due to motor1 mass
+        - P3.dot(j)*m3*g # torque due to motor2 mass
+        - Pb.dot(j)*mb*g # torque due to battery mass
+        - P4.dot(j)*m4*g)
 total_tau2 = (
         tau2
-        - l2*c12*m3*g
-        - (l2/2.0*c12 + lb*cos(theta12+pi/2.0))*mb*g
-        - (l2*c12 + l3*c123)*m4*g)
+        - (P3-P2).dot(j)*m3*g
+        - (Pb-P2).dot(j)*mb*g
+        - (P4-P2).dot(j)*m4*g)
 
 total_tau3 = (
         tau3
-        - l3*c123*m4*g)
+        - (P4-P3).dot(j)*m4*g)
 
 F_t = J.dot(Matrix([total_tau1, total_tau2, total_tau3]))
 
+torque_jacobian_x = lambdify(
+        [theta_0, theta_d_0, (tau1, tau2, tau3)],
+        F_t[0].subs(substitutions),
+        modules=symbolic_trig)
+
+torque_jacobian_y = lambdify(
+        [theta_0, theta_d_0, (tau1, tau2, tau3)],
+        F_t[1].subs(substitutions),
+        modules=symbolic_trig)
+
+def calc_end_force_from_torques(
+        theta1, theta2, theta3,
+        theta1_d, theta2_d, theta3_d,
+        tau1, tau2, tau3):
+    x = torque_jacobian_x(
+            (theta1, theta2, theta3),
+            (theta1_d, theta2_d, theta3_d),
+            (tau1, tau2, tau3))
+    y = torque_jacobian_y(
+            (theta1, theta2, theta3),
+            (theta1_d, theta2_d, theta3_d),
+            (tau1, tau2, tau3))
+    return (x, y)
+
 # External forces
-F_x = -F_t[0] # Normal reaction of wall
+# F_x = -F_t[0] # Normal reaction of wall
+F_x = 0.0
 F_y = F # Vertical force input force (from wheel)
 
-rhs1 = F_y*(l1*s1 + l2*s12 + l3*s123) + F_x*(l1*c1 + l2*c12 + l3*c123)
-rhs2 = tau2 + F_y*(l2*s12 + l3*s123) + F_x*(l2*c12 + l3*c123)
-rhs3 = tau3 + F_y*(l3*s123) + F_x*(l3*c123)
+rhs1 = total_tau1 + F_x*(l1*s1 + l2*s12 + l3*s123) + F_y*(l1*c1 + l2*c12 + l3*c123)
+rhs2 = total_tau2 + F_x*(l2*s12 + l3*s123) + F_y*(l2*c12 + l3*c123)
+rhs3 = total_tau3 + F_x*(l3*s123) + F_y*(l3*c123)
 rhs = Matrix([rhs1, rhs2, rhs3])
 
 eom = Eq(lhs, rhs).subs(substitutions)
@@ -174,15 +199,15 @@ theta3_dd_eom = theta_dd_eom[0][theta3_dd_0]
 theta1_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta1_dd_eom,
-        modules=custom_trig)
+        modules=numpy_trig)
 theta2_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta2_dd_eom,
-        modules=custom_trig)
+        modules=numpy_trig)
 theta3_dd_lambd = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta3_dd_eom,
-        modules=custom_trig)
+        modules=numpy_trig)
 lambdify_duration = time.time() - tic
 
 def calc_theta1_dd(
@@ -237,3 +262,6 @@ if __name__ == "__main__":
                 (random(), random(), random()),
                 (random(), random(), random(), random()))
     print("300 EOM calculation in " + str(time.time() - tic) + "s")
+
+    print(theta1_dd_lambd((0, 0, 0), (0, 0, 0), (10, 10, 10, 10)))
+    pdb.set_trace()
