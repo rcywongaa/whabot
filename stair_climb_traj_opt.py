@@ -178,18 +178,22 @@ if __name__ == "__main__":
         mp.AddConstraint(initial_state[j] >= 0.0)
 
     # Constrain initial theta to be between 0 ~ 180
-    for j in range(0, 4):
-        mp.AddConstraint(initial_state[j] >= 0.0)
-        mp.AddConstraint(initial_state[j] <= np.pi)
+    # for j in range(0, 4):
+        # mp.AddConstraint(initial_state[j] >= 0.0)
+        # mp.AddConstraint(initial_state[j] <= np.pi)
+
+    # for j in range(0, 3):
+        # mp.AddConstraint(initial_state[j] <= np.pi/2.0)
+        # mp.AddConstraint(initial_state[j] >= np.pi/2.0)
 
     # Constrain initial theta4 (i.e. front wheel) to be 0.0
-    mp.AddConstraint(initial_state[3] <= 0.0)
-    mp.AddConstraint(initial_state[3] >= 0.0)
+    # mp.AddConstraint(initial_state[3] <= 0.0)
+    # mp.AddConstraint(initial_state[3] >= 0.0)
 
     # Constrain initial front wheel position y position to be 0.0
-    initial_wheel_position = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
-    mp.AddConstraint(initial_wheel_position[1] <= 0.0)
-    mp.AddConstraint(initial_wheel_position[1] >= 0.0)
+    # initial_wheel_position = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
+    # mp.AddConstraint(initial_wheel_position[1] <= 0.0)
+    # mp.AddConstraint(initial_wheel_position[1] >= 0.0)
 
     state_over_time[0] = initial_state
 
@@ -220,12 +224,12 @@ if __name__ == "__main__":
         # mp.AddConstraint(COEFF_FRICTION*J.dot(tau123)[0] <= -w_r*tau234[2]) # FIXME
 
         # Constrain no x motion of front wheel
-        mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] <= initial_wheel_position[0])
-        mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] >= initial_wheel_position[0])
+        # mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] <= initial_wheel_position[0])
+        # mp.AddConstraint(findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] >= initial_wheel_position[0])
 
-        for j in range(3): # Constrain theta1, theta2, theta3
-            mp.AddConstraint(next_state[j] >= 0.0)
-            mp.AddConstraint(next_state[j] <= np.pi)
+        # for j in range(3): # Constrain theta1, theta2, theta3
+            # mp.AddConstraint(next_state[j] >= 0.0)
+            # mp.AddConstraint(next_state[j] <= np.pi)
         # for j in range(8):
             # mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
             # mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
@@ -250,7 +254,8 @@ if __name__ == "__main__":
     mp.AddCost(0.01 * tau234_over_time[:,0].dot(tau234_over_time[:,0]))
     mp.AddCost(0.01 * tau234_over_time[:,1].dot(tau234_over_time[:,1]))
     mp.AddCost(0.01 * tau234_over_time[:,2].dot(tau234_over_time[:,2]))
-    mp.AddCost(-(state_over_time[:,0].dot(state_over_time[:,0])))
+    # This cost is incorrect, different case for if front wheel is left / right of back wheel
+    # mp.AddCost(-(state_over_time[:,0].dot(state_over_time[:,0])))
 
     final_state = state_over_time[-1]
     # Constrain final velocity to be 0
@@ -259,9 +264,9 @@ if __name__ == "__main__":
         mp.AddConstraint(final_state[j] >= 0.0)
 
     # Constrain final front wheel position
-    final_front_wheel_pos = findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
-    mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT)
-    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT)
+    # final_front_wheel_pos = findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
+    # mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT)
+    # mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT)
 
     print("Begin solving...")
     t = time.time()
@@ -269,16 +274,20 @@ if __name__ == "__main__":
     print("Done solving in " + str(time.time() - t) + "s")
     is_success = result.is_success()
     print("is_success = " + str(is_success))
-    torque_over_time = result.GetSolution(tau234_over_time)
-    state_over_time = result.GetSolution(state_over_time)
-    # pdb.set_trace()
+    torque_over_time_star = result.GetSolution(tau234_over_time)
+    state_over_time_star = result.GetSolution(state_over_time)
+    pdb.set_trace()
+
+
+
+
 
     file_name = "res/stair_climb.sdf"
     builder = DiagramBuilder()
     stair_climb, scene_graph = AddMultibodyPlantSceneGraph(builder)
     # stair_climb.RegisterAsSourceForSceneGraph(scene_graph)
     Parser(plant=stair_climb).AddModelFromFile(file_name)
-    stair_climb.AddForceElement(UniformGravityFieldElement())
+    # stair_climb.AddForceElement(UniformGravityFieldElement())
 
     initial_state = state_over_time[0]
     front_wheel_x, front_wheel_y = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
@@ -292,7 +301,7 @@ if __name__ == "__main__":
             RigidTransform([0.0, 0.0, 0.0]),
             HalfSpace(),
             "GroundCollision",
-            CoulombFriction(0.6, 0.6))
+            CoulombFriction(COEFF_FRICTION, COEFF_FRICTION))
 
     stair_climb.RegisterVisualGeometry(
             stair_climb.world_body(),
@@ -306,7 +315,7 @@ if __name__ == "__main__":
             step_pos,
             step,
             "StepCollision",
-            CoulombFriction(0.6, 0.6))
+            CoulombFriction(COEFF_FRICTION, COEFF_FRICTION))
 
     stair_climb.RegisterVisualGeometry(
             stair_climb.world_body(),

@@ -112,7 +112,7 @@ c123 = cos(theta123)
 
 P2 = l1*c1*i + l1*s1*j
 P3 = P2 + l2*c12*i + l2*s12*j
-P4 = P3 + l3*c123*i + l2*s123*j
+P4 = P3 + l3*c123*i + l3*s123*j
 Pb = P2 + l2/2.0*c12*i + l2/2.0*s12*j + lb*cos(theta1 + theta2 + pi/2.0)*i + lb*sin(theta1 + theta2 + pi/2.0)*j
 
 v2 = P2.diff(t, N)
@@ -120,11 +120,11 @@ v3 = P3.diff(t, N)
 v4 = P4.diff(t, N)
 vb = Pb.diff(t, N)
 
-KE = 0.5*m1*v2.dot(v2) + 0.5*m2*v2.dot(v2) + 0.5*m3*v3.dot(v3) + 0.5*m4*v4.dot(v4) + 0.5*mb*vb.dot(vb)
+KE = 0.5*m2*v2.dot(v2) + 0.5*m3*v3.dot(v3) + 0.5*m4*v4.dot(v4) + 0.5*mb*vb.dot(vb)
 PE = m2*g*P2.dot(j) + m3*g*P3.dot(j) + m4*g*P4.dot(j) + mb*g*Pb.dot(j)
-L = KE - PE
+L = Matrix([KE - PE])
 
-lhs = (Matrix([L]).jacobian(theta_d).diff(t) - Matrix([L]).jacobian(theta)).T
+lhs = (L.jacobian(theta_d).diff(t) - L.jacobian(theta)).T
 
 J = Matrix([
     [-l1*s1 - l2*s12 - l3*s123, -l2*s12 - l3*s123, -l3*s123],
@@ -176,9 +176,9 @@ def calc_end_force_from_torques(
 F_x = 0.0
 F_y = F # Vertical force input force (from wheel)
 
-rhs1 = total_tau1 + F_x*(l1*s1 + l2*s12 + l3*s123) + F_y*(l1*c1 + l2*c12 + l3*c123)
-rhs2 = total_tau2 + F_x*(l2*s12 + l3*s123) + F_y*(l2*c12 + l3*c123)
-rhs3 = total_tau3 + F_x*(l3*s123) + F_y*(l3*c123)
+rhs1 = tau1 + F_x*(l1*s1 + l2*s12 + l3*s123) + F_y*(l1*c1 + l2*c12 + l3*c123)
+rhs2 = tau2 + F_x*(l2*s12 + l3*s123) + F_y*(l2*c12 + l3*c123)
+rhs3 = tau3 + F_x*(l3*s123) + F_y*(l3*c123)
 rhs = Matrix([rhs1, rhs2, rhs3])
 
 eom = Eq(lhs, rhs).subs(substitutions)
