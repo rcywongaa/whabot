@@ -246,7 +246,6 @@ if __name__ == "__main__":
 
     from random import random
 
-    print(theta1_dd_eom)
     tic = time.time()
     for i in range(100):
         theta1_dd_lambd(
@@ -262,6 +261,3 @@ if __name__ == "__main__":
                 (random(), random(), random()),
                 (random(), random(), random(), random()))
     print("300 EOM calculation in " + str(time.time() - tic) + "s")
-
-    print(theta1_dd_lambd((0, 0, 0), (0, 0, 0), (10, 10, 10, 10)))
-    pdb.set_trace()
