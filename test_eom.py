@@ -32,6 +32,23 @@ class TestEOM(unittest.TestCase):
             tau1, tau2, tau3, F,
             is_symbolic = False), 0.0)
 
+class TestFrontWheelPosition(unittest.TestCase):
+    def test_zero_configuration(self):
+        x, y = eom.findFrontWheelPosition(0.0, 0.0, 0.0, is_symbolic = False)
+        self.assertAlmostEqual(y, 0.0)
+
+    def test_theta1_90(self):
+        x, y = eom.findFrontWheelPosition(np.pi/2.0, 0.0, 0.0, is_symbolic = False)
+        self.assertAlmostEqual(y, l_1 + l_2 + l_3)
+
+    def test_theta2_90(self):
+        x, y = eom.findFrontWheelPosition(0.0, np.pi/2.0, 0.0, is_symbolic = False)
+        self.assertAlmostEqual(y, l_2 + l_3)
+
+    def test_theta3_90(self):
+        x, y = eom.findFrontWheelPosition(0.0, 0.0, np.pi/2.0, is_symbolic = False)
+        self.assertAlmostEqual(y, l_3)
+
 if __name__ == '__main__':
     unittest.main()
 
