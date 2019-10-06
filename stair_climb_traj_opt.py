@@ -23,8 +23,9 @@ DYNAMICS_EPSILON = 1e-3
 
 I_w = 1.0/2.0*m_w*(w_r**2)
 
+TIME_ALLOWED = 1.0
 NUM_TIME_STEPS = 50
-TIME_INTERVAL = 1.0/NUM_TIME_STEPS
+TIME_INTERVAL = TIME_ALLOWED/NUM_TIME_STEPS
 
 def calc_theta1_dd(state, u, is_symbolic):
     return eom.calc_theta1_dd(
