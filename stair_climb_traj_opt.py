@@ -39,8 +39,8 @@ m_3 = m_2 # mass of l_2 - l_3 motor
 m_w = 4.0 # mass of wheel
 w_r = 0.1 # wheel radius
 I_w = 1.0/2.0*m_w*(w_r**2)
-NUM_TIME_STEPS = 200
-TIME_INTERVAL = 0.001
+NUM_TIME_STEPS = 100
+TIME_INTERVAL = 1.0/NUM_TIME_STEPS
 # F_f <= COEFF_FRICTION * F_n
 COEFF_FRICTION = 0.6
 
@@ -92,10 +92,9 @@ def findTheta1(theta2, theta3, theta4, is_symbolic = True):
     c = y**2 - q_s**2
 
     discriminant = b**2 - 4*a*c
+    # To deal with numerical issues
     if abs(discriminant) < DISCRIMINANT_EPSILON:
         discriminant = 0.0
-    # elif discriminant < -DISCRIMINANT_EPSILON:
-        # continue
     c1_1 = (-b + np.sqrt(discriminant))/(2*a)
     c1_2 = (-b - np.sqrt(discriminant))/(2*a)
     theta1_1 = np.arccos(c1_1)
@@ -178,9 +177,9 @@ if __name__ == "__main__":
         mp.AddConstraint(initial_state[j] >= 0.0)
 
     # Constrain initial theta to be between 0 ~ 180
-    # for j in range(0, 4):
-        # mp.AddConstraint(initial_state[j] >= 0.0)
-        # mp.AddConstraint(initial_state[j] <= np.pi)
+    for j in range(0, 4):
+        mp.AddConstraint(initial_state[j] >= 0.0)
+        mp.AddConstraint(initial_state[j] <= np.pi)
 
     # for j in range(0, 3):
         # mp.AddConstraint(initial_state[j] <= np.pi/2.0)
@@ -191,9 +190,9 @@ if __name__ == "__main__":
     # mp.AddConstraint(initial_state[3] >= 0.0)
 
     # Constrain initial front wheel position y position to be 0.0
-    # initial_wheel_position = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
-    # mp.AddConstraint(initial_wheel_position[1] <= 0.0)
-    # mp.AddConstraint(initial_wheel_position[1] >= 0.0)
+    initial_wheel_position = findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
+    mp.AddConstraint(initial_wheel_position[1] <= 0.0)
+    mp.AddConstraint(initial_wheel_position[1] >= 0.0)
 
     state_over_time[0] = initial_state
 
@@ -217,10 +216,10 @@ if __name__ == "__main__":
         tau4 = tau234[2]
 
         # Add end force constraint
-        eom.calc_end_force_from_torques(
-                theta1, theta2, theta3,
-                theta1_d, theta2_d, theta3_d,
-                tau1, tau2, tau3)
+        # eom.calc_end_force_from_torques(
+                # theta1, theta2, theta3,
+                # theta1_d, theta2_d, theta3_d,
+                # tau1, tau2, tau3)
         # mp.AddConstraint(COEFF_FRICTION*J.dot(tau123)[0] <= -w_r*tau234[2]) # FIXME
 
         # Constrain no x motion of front wheel
@@ -264,9 +263,9 @@ if __name__ == "__main__":
         mp.AddConstraint(final_state[j] >= 0.0)
 
     # Constrain final front wheel position
-    # final_front_wheel_pos = findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
-    # mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT)
-    # mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT)
+    final_front_wheel_pos = findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
+    mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT)
+    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT)
 
     print("Begin solving...")
     t = time.time()

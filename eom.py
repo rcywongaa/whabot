@@ -172,6 +172,7 @@ def calc_end_force_from_torques(
     return (x, y)
 
 # External forces
+# FIXME
 # F_x = -F_t[0] # Normal reaction of wall
 F_x = 0.0
 F_y = F # Vertical force input force (from wheel)
