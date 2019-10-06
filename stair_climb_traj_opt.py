@@ -10,6 +10,7 @@ from constants import *
 
 import eom
 
+use_symbolic_derivs = False
 STATE_SIZE = 8
 TORQUE_SIZE = 3
 
@@ -23,23 +24,26 @@ I_w = 1.0/2.0*m_w*(w_r**2)
 NUM_TIME_STEPS = 50
 TIME_INTERVAL = 1.0/NUM_TIME_STEPS
 
-def calc_theta1_dd(state, u):
+def calc_theta1_dd(state, u, is_symbolic):
     return eom.calc_theta1_dd(
             state[0], state[1], state[2],
             state[4], state[5], state[6],
-            u[0], u[1], u[2], u[3]*w_r)
+            u[0], u[1], u[2], u[3]*w_r,
+            is_symbolic)
 
-def calc_theta2_dd(state, u):
+def calc_theta2_dd(state, u, is_symbolic):
     return eom.calc_theta2_dd(
             state[0], state[1], state[2],
             state[4], state[5], state[6],
-            u[0], u[1], u[2], u[3]*w_r)
+            u[0], u[1], u[2], u[3]*w_r,
+            is_symbolic)
 
-def calc_theta3_dd(state, u):
+def calc_theta3_dd(state, u, is_symbolic):
     return eom.calc_theta3_dd(
             state[0], state[1], state[2],
             state[4], state[5], state[6],
-            u[0], u[1], u[2], u[3]*w_r)
+            u[0], u[1], u[2], u[3]*w_r,
+            is_symbolic)
 
 def derivs(state, tau234, is_symbolic = True):
     if is_symbolic:
@@ -73,9 +77,9 @@ def derivs(state, tau234, is_symbolic = True):
     tau = np.array([tau1, tau2, tau3, tau4])
     state_d = np.zeros_like(state)
     state_d[0:4] = state[4:8]
-    state_d[4] = calc_theta1_dd(state, tau)
-    state_d[5] = calc_theta2_dd(state, tau)
-    state_d[6] = calc_theta3_dd(state, tau)
+    state_d[4] = calc_theta1_dd(state, tau, is_symbolic)
+    state_d[5] = calc_theta2_dd(state, tau, is_symbolic)
+    state_d[6] = calc_theta3_dd(state, tau, is_symbolic)
     state_d[7] = tau234[2] / I_w
     return state_d
 
@@ -144,23 +148,25 @@ if __name__ == "__main__":
         # for j in range(3): # Constrain theta1, theta2, theta3
             # mp.AddConstraint(next_state[j] >= 0.0)
             # mp.AddConstraint(next_state[j] <= np.pi)
-        # for j in range(8):
-            # mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
-            # mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
 
-        def next_state_constraint(stacked):
-            next_state = stacked[0:STATE_SIZE]
-            current_state = stacked[STATE_SIZE:STATE_SIZE*2]
-            current_tau234 = stacked[STATE_SIZE*2:STATE_SIZE*2+TORQUE_SIZE]
-            desired_state = current_state + TIME_INTERVAL*derivs(current_state, current_tau234, is_symbolic = False)
-            diff = desired_state - next_state
-            ret = np.zeros_like(stacked)
-            ret[0:STATE_SIZE] = diff
-            return ret
+        if use_symbolic_derivs:
+            for j in range(8):
+                mp.AddConstraint(next_state[j] <= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
+                mp.AddConstraint(next_state[j] >= (state_over_time[i] + TIME_INTERVAL*derivs(state_over_time[i], tau234))[j])
+        else:
+            def next_state_constraint(stacked):
+                next_state = stacked[0:STATE_SIZE]
+                current_state = stacked[STATE_SIZE:STATE_SIZE*2]
+                current_tau234 = stacked[STATE_SIZE*2:STATE_SIZE*2+TORQUE_SIZE]
+                desired_state = current_state + TIME_INTERVAL*derivs(current_state, current_tau234, is_symbolic = False)
+                diff = desired_state - next_state
+                ret = np.zeros_like(stacked)
+                ret[0:STATE_SIZE] = diff
+                return ret
 
-        stacked = np.concatenate([next_state, state_over_time[i], tau234])
-        bounds = np.ones(stacked.shape)*DYNAMICS_EPSILON
-        mp.AddConstraint(next_state_constraint, -bounds, bounds, stacked)
+            stacked = np.concatenate([next_state, state_over_time[i], tau234])
+            bounds = np.ones(stacked.shape)*DYNAMICS_EPSILON
+            mp.AddConstraint(next_state_constraint, -bounds, bounds, stacked)
 
         tau234_over_time[i] = tau234
         state_over_time[i+1] = next_state

@@ -7,6 +7,7 @@ from sympy import diff, Symbol, sin, cos, pi, Matrix
 from sympy import Eq, solve, trigsimp
 from sympy import init_printing, pprint, pretty
 import_sympy_duration = time.time() - tic
+import numpy as np
 
 from constants import *
 import pdb
@@ -177,24 +178,44 @@ tic = time.time()
 theta1_dd_eom = theta_dd_eom[0][theta1_dd_0]
 theta2_dd_eom = theta_dd_eom[0][theta2_dd_0]
 theta3_dd_eom = theta_dd_eom[0][theta3_dd_0]
-theta1_dd_lambd = lambdify(
+
+theta1_dd_np = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta1_dd_eom,
         modules=numpy_trig)
-theta2_dd_lambd = lambdify(
+theta1_dd_sym = lambdify(
+        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        theta1_dd_eom,
+        modules=symbolic_trig)
+
+theta2_dd_np = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta2_dd_eom,
         modules=numpy_trig)
-theta3_dd_lambd = lambdify(
+theta2_dd_sym = lambdify(
+        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        theta2_dd_eom,
+        modules=symbolic_trig)
+
+theta3_dd_np = lambdify(
         [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
         theta3_dd_eom,
         modules=numpy_trig)
+theta3_dd_sym = lambdify(
+        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        theta3_dd_eom,
+        modules=symbolic_trig)
+
 lambdify_duration = time.time() - tic
 
 def calc_theta1_dd(
         theta1, theta2, theta3,
         theta1_d, theta2_d, theta3_d,
-        tau1, tau2, tau3, F):
+        tau1, tau2, tau3, F, is_symbolic):
+    if is_symbolic:
+        theta1_dd_lambd = theta1_dd_sym
+    else:
+        theta1_dd_lambd = theta1_dd_np
     return theta1_dd_lambd(
             (theta1, theta2, theta3),
             (theta1_d, theta2_d, theta3_d),
@@ -203,7 +224,11 @@ def calc_theta1_dd(
 def calc_theta2_dd(
         theta1, theta2, theta3,
         theta1_d, theta2_d, theta3_d,
-        tau1, tau2, tau3, F):
+        tau1, tau2, tau3, F, is_symbolic):
+    if is_symbolic:
+        theta2_dd_lambd = theta2_dd_sym
+    else:
+        theta2_dd_lambd = theta2_dd_np
     return theta2_dd_lambd(
             (theta1, theta2, theta3),
             (theta1_d, theta2_d, theta3_d),
@@ -212,13 +237,17 @@ def calc_theta2_dd(
 def calc_theta3_dd(
         theta1, theta2, theta3,
         theta1_d, theta2_d, theta3_d,
-        tau1, tau2, tau3, F):
+        tau1, tau2, tau3, F, is_symbolic):
+    if is_symbolic:
+        theta3_dd_lambd = theta3_dd_sym
+    else:
+        theta3_dd_lambd = theta3_dd_np
     return theta3_dd_lambd(
             (theta1, theta2, theta3),
             (theta1_d, theta2_d, theta3_d),
             (tau1, tau2, tau3, F))
 
-def findTheta1(theta2, theta3, theta4, is_symbolic = True):
+def findTheta1(theta2, theta3, theta4, is_symbolic):
     if is_symbolic:
         sin = pydrake.symbolic.sin
         cos = pydrake.symbolic.cos
