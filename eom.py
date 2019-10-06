@@ -91,10 +91,10 @@ c3 = cos(theta3)
 c12 = cos(theta12)
 c123 = cos(theta123)
 
-P2 = l_1*c1*i + l_1*s1*j
-P3 = P2 + l_2*c12*i + l_2*s12*j
-P4 = P3 + l_3*c123*i + l_3*s123*j
-Pb = P2 + l_2/2.0*c12*i + l_2/2.0*s12*j + l_b*cos(theta1 + theta2 + pi/2.0)*i + l_b*sin(theta1 + theta2 + pi/2.0)*j
+P2 = l_1*c1*i - l_1*s1*k
+P3 = P2 + l_2*c12*i - l_2*s12*k
+P4 = P3 + l_3*c123*i - l_3*s123*k
+Pb = P2 + l_2/2.0*c12*i - l_2/2.0*s12*k + l_b*cos(theta1 + theta2 + pi/2.0)*i - l_b*sin(theta1 + theta2 + pi/2.0)*k
 
 v2 = P2.diff(t, N)
 v3 = P3.diff(t, N)
@@ -102,7 +102,7 @@ v4 = P4.diff(t, N)
 vb = Pb.diff(t, N)
 
 KE = 0.5*m_2*v2.dot(v2) + 0.5*m_3*v3.dot(v3) + 0.5*m_4*v4.dot(v4) + 0.5*m_b*vb.dot(vb)
-PE = m_2*g*P2.dot(j) + m_3*g*P3.dot(j) + m_4*g*P4.dot(j) + m_b*g*Pb.dot(j)
+PE = m_2*g*P2.dot(k) + m_3*g*P3.dot(k) + m_4*g*P4.dot(k) + m_b*g*Pb.dot(k)
 L = Matrix([KE - PE])
 
 lhs = (L.jacobian(theta_d).diff(t) - L.jacobian(theta)).T
@@ -112,19 +112,19 @@ J = Matrix([
     [l_1*c1 + l_2*c12 + l_3*c123, l_2*c12 + l_3*c123, l_3*c123]])
 total_tau1 = (
         tau1
-        - P2.dot(j)*m_2*g # torque due to motor1 mass
-        - P3.dot(j)*m_3*g # torque due to motor2 mass
-        - Pb.dot(j)*m_b*g # torque due to battery mass
-        - P4.dot(j)*m_4*g)
+        - P2.dot(k)*m_2*g # torque due to motor1 mass
+        - P3.dot(k)*m_3*g # torque due to motor2 mass
+        - Pb.dot(k)*m_b*g # torque due to battery mass
+        - P4.dot(k)*m_4*g)
 total_tau2 = (
         tau2
-        - (P3-P2).dot(j)*m_3*g
-        - (Pb-P2).dot(j)*m_b*g
-        - (P4-P2).dot(j)*m_4*g)
+        - (P3-P2).dot(k)*m_3*g
+        - (Pb-P2).dot(k)*m_b*g
+        - (P4-P2).dot(k)*m_4*g)
 
 total_tau3 = (
         tau3
-        - (P4-P3).dot(j)*m_4*g)
+        - (P4-P3).dot(k)*m_4*g)
 
 F_t = J.dot(Matrix([total_tau1, total_tau2, total_tau3]))
 
@@ -158,9 +158,9 @@ def calc_end_force_from_torques(
 F_x = 0.0
 F_y = F # Vertical force input force (from wheel)
 
-rhs1 = tau1 + F_x*(l_1*s1 + l_2*s12 + l_3*s123) + F_y*(l_1*c1 + l_2*c12 + l_3*c123)
-rhs2 = tau2 + F_x*(l_2*s12 + l_3*s123) + F_y*(l_2*c12 + l_3*c123)
-rhs3 = tau3 + F_x*(l_3*s123) + F_y*(l_3*c123)
+rhs1 = tau1 - F_x*(l_1*s1 + l_2*s12 + l_3*s123) + F_y*(l_1*c1 + l_2*c12 + l_3*c123)
+rhs2 = tau2 - F_x*(l_2*s12 + l_3*s123) + F_y*(l_2*c12 + l_3*c123)
+rhs3 = tau3 - F_x*(l_3*s123) + F_y*(l_3*c123)
 rhs = Matrix([rhs1, rhs2, rhs3])
 
 eom = Eq(lhs, rhs).subs(substitutions)
@@ -267,7 +267,7 @@ def findTheta1(theta2, theta3, theta4, is_symbolic):
     # Use sum of angles formula: l_1*s1 + l_2*(s1*c2 + c1*s2) + l_3*(s1*c23 + c1*s23) = y
     # Rearrange terms:                                                q_s*s1 + q_c*c1 = y
     q_s = l_1 + l_2*c2 + l_3*c23
-    q_c = l_2*s2 + l_3*s23
+    q_c = -l_2*s2 - l_3*s23
     # Rearrange terms:                                                 q_s*s1 = y - q_c*c1
     # Square both sides:                                         q_s**2*s1**2 = y**2 - 2*y*q_c*c1 + q_c**2*c1**2
     # Rearrange terms    (q_c**2 + q_s**2)*c1**2 - 2*y*q_c*c1 + y**2 - q_s**2 = 0
@@ -308,7 +308,7 @@ def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
     c123 = cos(theta123)
 
     x = l_1*c1 + l_2*c12 + l_3*c123
-    y = l_1*s1 + l_2*s12 + l_3*s123
+    y = -l_1*s1 - l_2*s12 - l_3*s123
     return (x, y)
 
 if __name__ == "__main__":
