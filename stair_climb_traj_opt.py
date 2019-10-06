@@ -192,12 +192,25 @@ if __name__ == "__main__":
     print("Begin solving...")
     t = time.time()
     result = Solve(mp)
-    print("Done solving in " + str(time.time() - t) + "s")
+    solve_traj_opt_duration = time.time() - t
+    print("Done solving in " + str(solve_traj_opt_duration) + "s (" + str(solve_traj_opt_duration/60.0) + "m)")
     is_success = result.is_success()
     print("is_success = " + str(is_success))
     torque_over_time_star = result.GetSolution(tau234_over_time)
     state_over_time_star = result.GetSolution(state_over_time)
 
-    for state in state_over_time_star:
+    time_step = 0
+    while time_step < len(state_over_time_star):
+        state = state_over_time_star[time_step]
+        print("theta = " + str(state[0:int(STATE_SIZE/2)]))
+        print("theta_d = " + str(state[int(STATE_SIZE/2):STATE_SIZE]))
+        print("torques = " + str(torque_over_time_star[time_step]))
         visualize.visualize(state[0], state[1], state[2])
-        pdb.set_trace()
+        print("c = continue, r = reverse, q = quit")
+        user_input = input("Input: ")
+        if user_input == 'c':
+            time_step += 1
+        elif user_input == 'r':
+            time_step = max(0, time_step - 1)
+        elif user_input == 'q':
+            break
