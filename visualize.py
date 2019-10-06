@@ -78,4 +78,4 @@ def visualize(theta1, theta2, theta3, theta4=0.0, phi=0.0):
     simulator.set_publish_every_time_step(False)
     simulator.set_target_realtime_rate(0.001)
     simulator.Initialize()
-    simulator.AdvanceTo(0.001)
+    simulator.AdvanceTo(0.0)
