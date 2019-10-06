@@ -9,6 +9,7 @@ import pdb
 from constants import *
 
 import eom
+import visualize
 
 use_symbolic_derivs = False
 STATE_SIZE = 8
