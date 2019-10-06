@@ -8,7 +8,7 @@ from sympy import Eq, solve, trigsimp
 from sympy import init_printing, pprint, pretty
 import_sympy_duration = time.time() - tic
 
-import yaml
+from constants import *
 import pdb
 
 import pydrake.symbolic
@@ -72,26 +72,6 @@ tau2 = Symbol('tau2')
 tau3 = Symbol('tau3')
 # tau4 = Symbol('tau4')
 
-m1 = constants['wheel_mass']
-m2 = constants['motor1_mass']
-m3 = constants['motor2_mass']
-m4 = constants['wheel_mass']
-mb = constants['battery_mass'] # Note we treat battery motor and battery mass as a single mass
-l1 = constants['link1_length']
-l2 = constants['link2_length']
-l3 = constants['link3_length']
-lb = constants['linkb_length']
-
-# m1 = Symbol('m1')
-# m2 = Symbol('m2')
-# m3 = Symbol('m3')
-# m4 = Symbol('m4')
-# mb = Symbol('mb')
-# l1 = Symbol('l1')
-# l2 = Symbol('l2')
-# l3 = Symbol('l3')
-# lb = Symbol('lb')
-
 N = ReferenceFrame('N')
 i = N.x
 j = N.y
@@ -110,40 +90,40 @@ c3 = cos(theta3)
 c12 = cos(theta12)
 c123 = cos(theta123)
 
-P2 = l1*c1*i + l1*s1*j
-P3 = P2 + l2*c12*i + l2*s12*j
-P4 = P3 + l3*c123*i + l3*s123*j
-Pb = P2 + l2/2.0*c12*i + l2/2.0*s12*j + lb*cos(theta1 + theta2 + pi/2.0)*i + lb*sin(theta1 + theta2 + pi/2.0)*j
+P2 = l_1*c1*i + l_1*s1*j
+P3 = P2 + l_2*c12*i + l_2*s12*j
+P4 = P3 + l_3*c123*i + l_3*s123*j
+Pb = P2 + l_2/2.0*c12*i + l_2/2.0*s12*j + l_b*cos(theta1 + theta2 + pi/2.0)*i + l_b*sin(theta1 + theta2 + pi/2.0)*j
 
 v2 = P2.diff(t, N)
 v3 = P3.diff(t, N)
 v4 = P4.diff(t, N)
 vb = Pb.diff(t, N)
 
-KE = 0.5*m2*v2.dot(v2) + 0.5*m3*v3.dot(v3) + 0.5*m4*v4.dot(v4) + 0.5*mb*vb.dot(vb)
-PE = m2*g*P2.dot(j) + m3*g*P3.dot(j) + m4*g*P4.dot(j) + mb*g*Pb.dot(j)
+KE = 0.5*m_2*v2.dot(v2) + 0.5*m_3*v3.dot(v3) + 0.5*m_4*v4.dot(v4) + 0.5*m_b*vb.dot(vb)
+PE = m_2*g*P2.dot(j) + m_3*g*P3.dot(j) + m_4*g*P4.dot(j) + m_b*g*Pb.dot(j)
 L = Matrix([KE - PE])
 
 lhs = (L.jacobian(theta_d).diff(t) - L.jacobian(theta)).T
 
 J = Matrix([
-    [-l1*s1 - l2*s12 - l3*s123, -l2*s12 - l3*s123, -l3*s123],
-    [l1*c1 + l2*c12 + l3*c123, l2*c12 + l3*c123, l3*c123]])
+    [-l_1*s1 - l_2*s12 - l_3*s123, -l_2*s12 - l_3*s123, -l_3*s123],
+    [l_1*c1 + l_2*c12 + l_3*c123, l_2*c12 + l_3*c123, l_3*c123]])
 total_tau1 = (
         tau1
-        - P2.dot(j)*m2*g # torque due to motor1 mass
-        - P3.dot(j)*m3*g # torque due to motor2 mass
-        - Pb.dot(j)*mb*g # torque due to battery mass
-        - P4.dot(j)*m4*g)
+        - P2.dot(j)*m_2*g # torque due to motor1 mass
+        - P3.dot(j)*m_3*g # torque due to motor2 mass
+        - Pb.dot(j)*m_b*g # torque due to battery mass
+        - P4.dot(j)*m_4*g)
 total_tau2 = (
         tau2
-        - (P3-P2).dot(j)*m3*g
-        - (Pb-P2).dot(j)*mb*g
-        - (P4-P2).dot(j)*m4*g)
+        - (P3-P2).dot(j)*m_3*g
+        - (Pb-P2).dot(j)*m_b*g
+        - (P4-P2).dot(j)*m_4*g)
 
 total_tau3 = (
         tau3
-        - (P4-P3).dot(j)*m4*g)
+        - (P4-P3).dot(j)*m_4*g)
 
 F_t = J.dot(Matrix([total_tau1, total_tau2, total_tau3]))
 
@@ -177,9 +157,9 @@ def calc_end_force_from_torques(
 F_x = 0.0
 F_y = F # Vertical force input force (from wheel)
 
-rhs1 = tau1 + F_x*(l1*s1 + l2*s12 + l3*s123) + F_y*(l1*c1 + l2*c12 + l3*c123)
-rhs2 = tau2 + F_x*(l2*s12 + l3*s123) + F_y*(l2*c12 + l3*c123)
-rhs3 = tau3 + F_x*(l3*s123) + F_y*(l3*c123)
+rhs1 = tau1 + F_x*(l_1*s1 + l_2*s12 + l_3*s123) + F_y*(l_1*c1 + l_2*c12 + l_3*c123)
+rhs2 = tau2 + F_x*(l_2*s12 + l_3*s123) + F_y*(l_2*c12 + l_3*c123)
+rhs3 = tau3 + F_x*(l_3*s123) + F_y*(l_3*c123)
 rhs = Matrix([rhs1, rhs2, rhs3])
 
 eom = Eq(lhs, rhs).subs(substitutions)
@@ -237,6 +217,70 @@ def calc_theta3_dd(
             (theta1, theta2, theta3),
             (theta1_d, theta2_d, theta3_d),
             (tau1, tau2, tau3, F))
+
+def findTheta1(theta2, theta3, theta4, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
+
+    y = theta4*w_r
+    s2 = sin(theta2)
+    s3 = sin(theta3)
+    s23 = sin(theta2+theta3)
+    c2 = cos(theta2)
+    c3 = cos(theta3)
+    c23 = cos(theta2+theta3)
+    # Given theta2, theta3 and y, find theta1
+    # i.e. solve                                          l_1*s1 + l_2*s12 + l_3*s123 = y
+    # Use sum of angles formula: l_1*s1 + l_2*(s1*c2 + c1*s2) + l_3*(s1*c23 + c1*s23) = y
+    # Rearrange terms:                                                q_s*s1 + q_c*c1 = y
+    q_s = l_1 + l_2*c2 + l_3*c23
+    q_c = l_2*s2 + l_3*s23
+    # Rearrange terms:                                                 q_s*s1 = y - q_c*c1
+    # Square both sides:                                         q_s**2*s1**2 = y**2 - 2*y*q_c*c1 + q_c**2*c1**2
+    # Rearrange terms    (q_c**2 + q_s**2)*c1**2 - 2*y*q_c*c1 + y**2 - q_s**2 = 0
+    # Solve quadratic equation for c1
+    a = q_c**2 + q_s**2
+    b = -2*y*q_c
+    c = y**2 - q_s**2
+
+    discriminant = b**2 - 4*a*c
+    # To deal with numerical issues
+    if abs(discriminant) < DISCRIMINANT_EPSILON:
+        discriminant = 0.0
+    c1_1 = (-b + np.sqrt(discriminant))/(2*a)
+    c1_2 = (-b - np.sqrt(discriminant))/(2*a)
+    theta1_1 = np.arccos(c1_1)
+    theta1_2 = np.arccos(c1_2)
+    return theta1_1, theta1_2
+
+def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
+    if is_symbolic:
+        sin = pydrake.symbolic.sin
+        cos = pydrake.symbolic.cos
+    else:
+        sin = np.sin
+        cos = np.cos
+
+    theta12 = theta2 + theta1
+    theta123 = theta3 + theta12
+    s1 = sin(theta1)
+    s2 = sin(theta2)
+    s3 = sin(theta3)
+    s12 = sin(theta12)
+    s123 = sin(theta123)
+    c1 = cos(theta1)
+    c2 = cos(theta2)
+    c3 = cos(theta3)
+    c12 = cos(theta12)
+    c123 = cos(theta123)
+
+    x = l_1*c1 + l_2*c12 + l_3*c123
+    y = l_1*s1 + l_2*s12 + l_3*s123
+    return (x, y)
 
 if __name__ == "__main__":
     print("Imported sympy in " + str(import_sympy_duration) + "s")
