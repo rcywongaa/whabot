@@ -15,6 +15,7 @@ use_symbolic_derivs = False
 STATE_SIZE = 8
 TORQUE_SIZE = 3
 
+JOINT_MOTOR_MAX_TORQUE = 2.0
 HUB_MOTOR_MAX_TORQUE = 20
 MIN_NORMAL_REACTION = 4
 DISCRIMINANT_EPSILON = 1e-10
@@ -131,9 +132,14 @@ if __name__ == "__main__":
         theta3_d = next_state[6]
         theta4_d = next_state[7]
         tau1 = 0.0 # Unactuated
-        tau2 = tau234[0]
-        tau3 = tau234[1]
-        tau4 = tau234[2]
+        tau2 = tau234[0] # joint motor
+        tau3 = tau234[1] # joint motor
+        tau4 = tau234[2] # hub motor
+
+        # Add torque constraints
+        # mp.AddConstraint(tau2**2 <= JOINT_MOTOR_MAX_TORQUE**2)
+        # mp.AddConstraint(tau3**2 <= JOINT_MOTOR_MAX_TORQUE**2)
+        # mp.AddConstraint(tau4**2 <= HUB_MOTOR_MAX_TORQUE**2)
 
         # Add end force constraint
         # eom.calc_end_force_from_torques(
