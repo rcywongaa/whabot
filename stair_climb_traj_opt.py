@@ -86,30 +86,34 @@ def derivs(state, tau234, is_symbolic = True):
     state_d[7] = tau234[2] / I_w
     return state_d
 
+def constrain_theta123(mp, theta1, theta2, theta3):
+    # note theta1 should be in opposite direction
+    mp.AddConstraint(theta1 <= 0.0)
+    mp.AddConstraint(theta1 >= -np.pi)
+    mp.AddConstraint(theta2 >= 0.0)
+    mp.AddConstraint(theta2 <= np.pi)
+    mp.AddConstraint(theta3 >= 0.0)
+    mp.AddConstraint(theta3 <= np.pi)
+
 if __name__ == "__main__":
     mp = MathematicalProgram()
     state_over_time = np.zeros(shape=(NUM_TIME_STEPS, STATE_SIZE), dtype=pydrake.symbolic.Variable)
     tau234_over_time = np.zeros(shape=(NUM_TIME_STEPS, TORQUE_SIZE), dtype=pydrake.symbolic.Variable)
 
     initial_state = mp.NewContinuousVariables(8, "state_0")
+    initial_theta1 = initial_state[0]
+    initial_theta2 = initial_state[1]
+    initial_theta3 = initial_state[2]
+    initial_theta4 = initial_state[3]
 
     # Constrain initial velocity to be 0
     for j in range(4, 8):
         mp.AddConstraint(initial_state[j] <= 0.0)
         mp.AddConstraint(initial_state[j] >= 0.0)
 
-    # Constrain initial theta to be between 0 ~ 180
-    for j in range(0, 4):
-        mp.AddConstraint(initial_state[j] >= 0.0)
-        mp.AddConstraint(initial_state[j] <= np.pi)
-
-    # for j in range(0, 3):
-        # mp.AddConstraint(initial_state[j] <= np.pi/2.0)
-        # mp.AddConstraint(initial_state[j] >= np.pi/2.0)
-
-    # Constrain initial theta4 (i.e. front wheel) to be 0.0
-    # mp.AddConstraint(initial_state[3] <= 0.0)
-    # mp.AddConstraint(initial_state[3] >= 0.0)
+    constrain_theta123(mp, initial_theta1, initial_theta2, initial_theta3)
+    mp.AddConstraint(initial_theta4 >= 0.0)
+    mp.AddConstraint(initial_theta4 <= 0.0)
 
     # Constrain initial front wheel position y position to be 0.0
     initial_wheel_position = eom.findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
@@ -153,9 +157,7 @@ if __name__ == "__main__":
         # mp.AddConstraint(eom.findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] <= initial_wheel_position[0])
         # mp.AddConstraint(eom.findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] >= initial_wheel_position[0])
 
-        # for j in range(3): # Constrain theta1, theta2, theta3
-            # mp.AddConstraint(next_state[j] >= 0.0)
-            # mp.AddConstraint(next_state[j] <= np.pi)
+        constrain_theta123(mp, theta1, theta2, theta3)
 
         if use_symbolic_derivs:
             for j in range(8):
