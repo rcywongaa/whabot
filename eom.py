@@ -322,15 +322,15 @@ if __name__ == "__main__":
 
     tic = time.time()
     for i in range(100):
-        theta1_dd_lambd(
+        theta1_dd_np(
                 (random(), random(), random()),
                 (random(), random(), random()),
                 (random(), random(), random(), random()))
-        theta2_dd_lambd(
+        theta2_dd_np(
                 (random(), random(), random()),
                 (random(), random(), random()),
                 (random(), random(), random(), random()))
-        theta3_dd_lambd(
+        theta3_dd_np(
                 (random(), random(), random()),
                 (random(), random(), random()),
                 (random(), random(), random(), random()))
