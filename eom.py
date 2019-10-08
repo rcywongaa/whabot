@@ -135,30 +135,31 @@ theta1_dd_eom = theta_dd_eom[0][theta1_dd_0]
 theta2_dd_eom = theta_dd_eom[0][theta2_dd_0]
 theta3_dd_eom = theta_dd_eom[0][theta3_dd_0]
 
+lambda_parameters = [theta_0, theta_d_0, (tau1, tau2, tau3, F)]
 theta1_dd_np = lambdify(
-        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        lambda_parameters,
         theta1_dd_eom,
         modules=numpy_trig)
 theta1_dd_sym = lambdify(
-        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        lambda_parameters,
         theta1_dd_eom,
         modules=symbolic_trig)
 
 theta2_dd_np = lambdify(
-        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        lambda_parameters,
         theta2_dd_eom,
         modules=numpy_trig)
 theta2_dd_sym = lambdify(
-        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        lambda_parameters,
         theta2_dd_eom,
         modules=symbolic_trig)
 
 theta3_dd_np = lambdify(
-        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        lambda_parameters,
         theta3_dd_eom,
         modules=numpy_trig)
 theta3_dd_sym = lambdify(
-        [theta_0, theta_d_0, (tau1, tau2, tau3, F)],
+        lambda_parameters,
         theta3_dd_eom,
         modules=symbolic_trig)
 
@@ -167,7 +168,7 @@ lambdify_duration = time.time() - tic
 def calc_theta1_dd(
         theta1, theta2, theta3,
         theta1_d, theta2_d, theta3_d,
-        tau1, tau2, tau3, F, is_symbolic):
+        tau1, tau2, tau3, F, is_symbolic = False):
     if is_symbolic:
         theta1_dd_lambd = theta1_dd_sym
     else:
@@ -180,7 +181,7 @@ def calc_theta1_dd(
 def calc_theta2_dd(
         theta1, theta2, theta3,
         theta1_d, theta2_d, theta3_d,
-        tau1, tau2, tau3, F, is_symbolic):
+        tau1, tau2, tau3, F, is_symbolic = False):
     if is_symbolic:
         theta2_dd_lambd = theta2_dd_sym
     else:
@@ -193,7 +194,7 @@ def calc_theta2_dd(
 def calc_theta3_dd(
         theta1, theta2, theta3,
         theta1_d, theta2_d, theta3_d,
-        tau1, tau2, tau3, F, is_symbolic):
+        tau1, tau2, tau3, F, is_symbolic = False):
     if is_symbolic:
         theta3_dd_lambd = theta3_dd_sym
     else:
@@ -278,16 +279,16 @@ if __name__ == "__main__":
 
     tic = time.time()
     for i in range(100):
-        theta1_dd_np(
-                (random(), random(), random()),
-                (random(), random(), random()),
-                (random(), random(), random(), random()))
-        theta2_dd_np(
-                (random(), random(), random()),
-                (random(), random(), random()),
-                (random(), random(), random(), random()))
-        theta3_dd_np(
-                (random(), random(), random()),
-                (random(), random(), random()),
-                (random(), random(), random(), random()))
+        calc_theta1_dd(
+                random(), random(), random(),
+                random(), random(), random(),
+                random(), random(), random(), random())
+        calc_theta2_dd(
+                random(), random(), random(),
+                random(), random(), random(),
+                random(), random(), random(), random())
+        calc_theta3_dd(
+                random(), random(), random(),
+                random(), random(), random(),
+                random(), random(), random(), random())
     print("300 EOM calculation in " + str(time.time() - tic) + "s")
