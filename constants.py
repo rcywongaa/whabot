@@ -18,4 +18,6 @@ w_r = constants['wheel_radius']
 STEP_DEPTH = constants['step_depth']
 STEP_WIDTH = constants['step_width']
 STEP_HEIGHT = constants['step_height']
-COEFF_FRICTION = constants['coeff_friction']
+STEP_POSITION = constants['step_position']
+COEFF_FRICTION = 0.6
+CONTACT_SPRING_STIFFNESS = 0.5

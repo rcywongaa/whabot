@@ -107,11 +107,11 @@ L = Matrix([KE - PE])
 
 lhs = (L.jacobian(theta_d).diff(t) - L.jacobian(theta)).T
 
+def get_contact_spring_force(x_position):
+    return -CONTACT_SPRING_STIFFNESS * (x_position - STEP_POSITION)
 
 # External forces
-# FIXME
-# F_x = -F_t[0] # Normal reaction of wall
-F_x = 0.0*i
+F_x = get_contact_spring_force(P4.dot(i) + w_r)*i
 F_z = F*k # Vertical force input force (from wheel)
 force = F_x + F_z
 

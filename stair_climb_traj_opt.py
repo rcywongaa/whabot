@@ -23,8 +23,8 @@ DYNAMICS_EPSILON = 1e-3
 
 I_w = 1.0/2.0*m_w*(w_r**2)
 
-TIME_ALLOWED = 1.0
-NUM_TIME_STEPS = 50
+TIME_ALLOWED = 2.0
+NUM_TIME_STEPS = 1000
 TIME_INTERVAL = TIME_ALLOWED/NUM_TIME_STEPS
 
 def calc_theta1_dd(state, u, is_symbolic):
@@ -120,6 +120,10 @@ if __name__ == "__main__":
     mp.AddConstraint(initial_wheel_position[1] <= 0.0)
     mp.AddConstraint(initial_wheel_position[1] >= 0.0)
 
+    # Constrain initial front wheel position
+    # mp.AddConstraint(initial_wheel_position[0] + w_r <= STEP_POSITION)
+    # mp.AddConstraint(initial_wheel_position[0] + w_r >= STEP_POSITION)
+
     state_over_time[0] = initial_state
 
     for i in range(NUM_TIME_STEPS-1):
@@ -146,16 +150,15 @@ if __name__ == "__main__":
         # mp.AddConstraint(tau3**2 <= JOINT_MOTOR_MAX_TORQUE**2)
         # mp.AddConstraint(tau4**2 <= HUB_MOTOR_MAX_TORQUE**2)
 
-        # Add end force constraint
-        # eom.calc_end_force_from_torques(
-                # theta1, theta2, theta3,
-                # theta1_d, theta2_d, theta3_d,
-                # tau1, tau2, tau3)
-        # mp.AddConstraint(COEFF_FRICTION*J.dot(tau123)[0] <= -w_r*tau234[2]) # FIXME
+        wheel_position = eom.findFrontWheelPosition(theta1, theta2, theta3)
 
-        # Constrain no x motion of front wheel
-        # mp.AddConstraint(eom.findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] <= initial_wheel_position[0])
-        # mp.AddConstraint(eom.findFrontWheelPosition(next_state[0], next_state[1], next_state[2])[0] >= initial_wheel_position[0])
+        # End penetration constraint
+        # mp.AddConstraint(wheel_position[0] + w_r >= STEP_POSITION)
+        # mp.AddConstraint(COEFF_FRICTION * (-eom.get_contact_spring_force(wheel_position[0] + w_r)) >= tau4*w_r)
+
+        # Constrain no negative x motion of front wheel
+        # mp.AddConstraint(wheel_position[0] <= initial_wheel_position[0])
+        # mp.AddConstraint(wheel_position[0] >= initial_wheel_position[0])
 
         constrain_theta123(mp, theta1, theta2, theta3)
 
@@ -181,9 +184,9 @@ if __name__ == "__main__":
         tau234_over_time[i] = tau234
         state_over_time[i+1] = next_state
 
-    mp.AddCost(0.01 * tau234_over_time[:,0].dot(tau234_over_time[:,0]))
-    mp.AddCost(0.01 * tau234_over_time[:,1].dot(tau234_over_time[:,1]))
-    mp.AddCost(0.01 * tau234_over_time[:,2].dot(tau234_over_time[:,2]))
+    mp.AddCost(0.1 * tau234_over_time[:,0].dot(tau234_over_time[:,0]))
+    mp.AddCost(0.1 * tau234_over_time[:,1].dot(tau234_over_time[:,1]))
+    mp.AddCost(0.1 * tau234_over_time[:,2].dot(tau234_over_time[:,2]))
     # This cost is incorrect, different case for if front wheel is left / right of back wheel
     # mp.AddCost(-(state_over_time[:,0].dot(state_over_time[:,0])))
 
@@ -195,8 +198,8 @@ if __name__ == "__main__":
 
     # Constrain final front wheel position
     final_front_wheel_pos = eom.findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
-    mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT)
-    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT)
+    mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT - w_r)
+    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT - w_r)
 
     print("Begin solving...")
     t = time.time()
