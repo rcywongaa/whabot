@@ -111,12 +111,13 @@ lhs = (L.jacobian(theta_d).diff(t) - L.jacobian(theta)).T
 # External forces
 # FIXME
 # F_x = -F_t[0] # Normal reaction of wall
-F_x = 0.0
-F_y = F # Vertical force input force (from wheel)
+F_x = 0.0*i
+F_z = F*k # Vertical force input force (from wheel)
+force = F_x + F_z
 
-rhs1 = tau1 - F_x*(l_1*s1 + l_2*s12 + l_3*s123) + F_y*(l_1*c1 + l_2*c12 + l_3*c123)
-rhs2 = tau2 - F_x*(l_2*s12 + l_3*s123) + F_y*(l_2*c12 + l_3*c123)
-rhs3 = tau3 - F_x*(l_3*s123) + F_y*(l_3*c123)
+rhs1 = tau1 + force.dot(P4.diff(theta1, N))
+rhs2 = tau2 + force.dot(P4.diff(theta2, N))
+rhs3 = tau3 + force.dot(P4.diff(theta3, N))
 rhs = Matrix([rhs1, rhs2, rhs3])
 
 eom = Eq(lhs, rhs).subs(substitutions)
