@@ -15,9 +15,10 @@ l_2 = constants['link2_length']
 l_3 = constants['link3_length']
 l_b = constants['linkb_length']
 w_r = constants['wheel_radius']
-STEP_DEPTH = constants['step_depth']
-STEP_WIDTH = constants['step_width']
-STEP_HEIGHT = constants['step_height']
-STEP_POSITION = constants['step_position']
+
+STEP_DEPTH = 0.4
+STEP_WIDTH = 0.5
+STEP_HEIGHT = 0.3
+STEP_POSITION = 1.12 + w_r
 COEFF_FRICTION = 0.6
-CONTACT_SPRING_STIFFNESS = 0.5
+CONTACT_SPRING_STIFFNESS = 50000.0

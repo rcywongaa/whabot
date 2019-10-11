@@ -94,7 +94,7 @@ c123 = cos(theta123)
 P2 = l_1*c1*i - l_1*s1*k
 P3 = P2 + l_2*c12*i - l_2*s12*k
 P4 = P3 + l_3*c123*i - l_3*s123*k
-Pb = P2 + l_2/2.0*c12*i - l_2/2.0*s12*k + l_b*cos(theta1 + theta2 + pi/2.0)*i - l_b*sin(theta1 + theta2 + pi/2.0)*k
+Pb = P2 + (l_2/2.0*c12 + l_b*cos(theta1 + theta2 + pi/2.0))*i - (l_2/2.0*s12 + l_b*sin(theta1 + theta2 + pi/2.0))*k
 
 v2 = P2.diff(t, N)
 v3 = P3.diff(t, N)

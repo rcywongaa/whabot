@@ -1,11 +1,6 @@
 pi: 3.14159
 g: 9.81
 
-step_depth: 0.4
-step_width: 0.5
-step_height: 0.3
-step_position: 1.0
-
 wheel_mass: 4.0
 wheel_radius: 0.1
 wheel_thickness: 0.05
