@@ -23,7 +23,7 @@ def visualize(theta1, theta2, theta3, theta4=0.0, phi=0.0):
     front_wheel_x = front_wheel_x.Evaluate()
     front_wheel_y = front_wheel_y.Evaluate()
     step = Box(STEP_DEPTH, STEP_WIDTH, STEP_HEIGHT)
-    step_pos = RigidTransform([front_wheel_x + w_r + STEP_DEPTH/2.0, 0.0, STEP_HEIGHT/2.0])
+    step_pos = RigidTransform([STEP_POSITION + STEP_DEPTH/2.0, 0.0, STEP_HEIGHT/2.0])
 
     stair_climb.RegisterCollisionGeometry(
             stair_climb.world_body(),
