@@ -1,5 +1,5 @@
 import pydrake
-from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve
+from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve, GetInfeasibleConstraints
 from pydrake.symbolic import Variable
 import numpy as np
 import math
@@ -19,13 +19,13 @@ JOINT_MOTOR_MAX_TORQUE = 2.0
 HUB_MOTOR_MAX_TORQUE = 20
 MIN_NORMAL_REACTION = 4
 DISCRIMINANT_EPSILON = 1e-10
-DYNAMICS_EPSILON = 1e-3
+DYNAMICS_EPSILON = 1e-5
 
 I_w = 1.0/2.0*m_w*(w_r**2)
 
-TIME_ALLOWED = 2.0
+TIME_ALLOWED = 1.0
 NUM_TIME_STEPS = 1000
-TIME_INTERVAL = TIME_ALLOWED/NUM_TIME_STEPS
+TIME_INTERVAL = TIME_ALLOWED / NUM_TIME_STEPS
 
 def calc_theta1_dd(state, u, is_symbolic):
     return eom.calc_theta1_dd(
@@ -72,12 +72,12 @@ def derivs(state, tau234, is_symbolic = True):
 
 def constrain_theta123(mp, theta1, theta2, theta3):
     # note theta1 should be in opposite direction
-    mp.AddConstraint(theta1 <= 0.0)
-    mp.AddConstraint(theta1 >= -np.pi)
-    mp.AddConstraint(theta2 >= 0.0)
-    mp.AddConstraint(theta2 <= np.pi)
-    mp.AddConstraint(theta3 >= 0.0)
-    mp.AddConstraint(theta3 <= np.pi)
+    mp.AddConstraint(theta1 <= 0.0).evaluator().set_description("Constrain theta1 <= 0.0")
+    mp.AddConstraint(theta1 >= -np.pi).evaluator().set_description("Constrain theta1 >= -np.pi")
+    mp.AddConstraint(theta2 >= 0.0).evaluator().set_description("Constrain theta2 >= 0.0")
+    mp.AddConstraint(theta2 <= np.pi).evaluator().set_description("Constrain theta2 <= np.pi")
+    mp.AddConstraint(theta3 >= 0.0).evaluator().set_description("Constrain theta3 >= 0.0")
+    mp.AddConstraint(theta3 <= np.pi).evaluator().set_description("Constrain theta3 <= np.pi")
 
 if __name__ == "__main__":
     mp = MathematicalProgram()
@@ -91,22 +91,26 @@ if __name__ == "__main__":
     initial_theta4 = initial_state[3]
 
     # Constrain initial velocity to be 0
-    for j in range(4, 8):
-        mp.AddConstraint(initial_state[j] <= 0.0)
-        mp.AddConstraint(initial_state[j] >= 0.0)
+    # for j in range(4, 8):
+        # mp.AddConstraint(initial_state[j] <= 0.0).evaluator().set_description("Constrain initial_state[%d] <= 0.0" % j)
+        # mp.AddConstraint(initial_state[j] >= 0.0).evaluator().set_description("Constrain initial_state[%d] >= 0.0" % j)
 
-    constrain_theta123(mp, initial_theta1, initial_theta2, initial_theta3)
-    mp.AddConstraint(initial_theta4 >= 0.0)
-    mp.AddConstraint(initial_theta4 <= 0.0)
+    # constrain_theta123(mp, initial_theta1, initial_theta2, initial_theta3)
+    mp.AddConstraint(initial_theta1 <= -np.pi/3.0)
+    mp.AddConstraint(initial_theta1 >= -np.pi/3.0)
+    mp.AddConstraint(initial_theta2 <= np.pi/3.0)
+    mp.AddConstraint(initial_theta2 >= np.pi/3.0)
+    # mp.AddConstraint(initial_theta4 >= 0.0)
+    # mp.AddConstraint(initial_theta4 <= 0.0)
 
     # Constrain initial front wheel position y position to be 0.0
     initial_wheel_position = eom.findFrontWheelPosition(initial_state[0], initial_state[1], initial_state[2])
-    mp.AddConstraint(initial_wheel_position[1] <= 0.0)
-    mp.AddConstraint(initial_wheel_position[1] >= 0.0)
+    mp.AddConstraint(initial_wheel_position[1] <= 0.0).evaluator().set_description("Constrain initial_wheel_position[1] <= 0.0")
+    mp.AddConstraint(initial_wheel_position[1] >= 0.0).evaluator().set_description("Constrain initial_wheel_position[1] >= 0.0")
 
     # Constrain initial front wheel position
     # mp.AddConstraint(initial_wheel_position[0] + w_r <= STEP_POSITION)
-    # mp.AddConstraint(initial_wheel_position[0] + w_r >= STEP_POSITION)
+    mp.AddConstraint(initial_wheel_position[0] + w_r >= STEP_POSITION).evaluator().set_description("Constrain initial_wheel_position[0] + w_r >= STEP_POSITION")
 
     state_over_time[0] = initial_state
 
@@ -136,15 +140,15 @@ if __name__ == "__main__":
 
         wheel_position = eom.findFrontWheelPosition(theta1, theta2, theta3)
 
-        # End penetration constraint
-        # mp.AddConstraint(wheel_position[0] + w_r >= STEP_POSITION)
+        # Front wheel penetration constraint
+        mp.AddConstraint(wheel_position[0] + w_r >= STEP_POSITION).evaluator().set_description("Constrain wheel_position[0] + w_r >= STEP_POSITION")
         # mp.AddConstraint(COEFF_FRICTION * (-eom.get_contact_spring_force(wheel_position[0] + w_r)) >= tau4*w_r)
 
         # Constrain no negative x motion of front wheel
         # mp.AddConstraint(wheel_position[0] <= initial_wheel_position[0])
         # mp.AddConstraint(wheel_position[0] >= initial_wheel_position[0])
 
-        constrain_theta123(mp, theta1, theta2, theta3)
+        # constrain_theta123(mp, theta1, theta2, theta3)
 
         if use_symbolic_derivs:
             for j in range(8):
@@ -163,7 +167,7 @@ if __name__ == "__main__":
 
             stacked = np.concatenate([next_state, state_over_time[i], tau234])
             bounds = np.ones(stacked.shape)*DYNAMICS_EPSILON
-            mp.AddConstraint(next_state_constraint, -bounds, bounds, stacked)
+            mp.AddConstraint(next_state_constraint, -bounds, bounds, stacked).evaluator().set_description("Constrain next_state_constraint %d" % i)
 
         tau234_over_time[i] = tau234
         state_over_time[i+1] = next_state
@@ -176,14 +180,14 @@ if __name__ == "__main__":
 
     final_state = state_over_time[-1]
     # Constrain final velocity to be 0
-    for j in range(4, 8):
-        mp.AddConstraint(final_state[j] <= 0.0)
-        mp.AddConstraint(final_state[j] >= 0.0)
+    # for j in range(4, 8):
+        # mp.AddConstraint(final_state[j] <= 0.0)
+        # mp.AddConstraint(final_state[j] >= 0.0)
 
     # Constrain final front wheel position
     final_front_wheel_pos = eom.findFrontWheelPosition(final_state[0], final_state[1], final_state[2])
-    mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT - w_r)
-    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT - w_r)
+    # mp.AddConstraint(final_front_wheel_pos[1] <= STEP_HEIGHT - w_r)
+    mp.AddConstraint(final_front_wheel_pos[1] >= STEP_HEIGHT - w_r).evaluator().set_description("Constrain final_front_wheel_pos[1] >= 0.01")
 
     print("Begin solving...")
     t = time.time()
