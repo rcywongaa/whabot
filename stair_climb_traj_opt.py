@@ -59,22 +59,6 @@ def derivs(state, tau234, is_symbolic = True):
     tau2 = tau234[0]
     tau3 = tau234[1]
     tau4 = tau234[2]
-    theta1 = state[0]
-    theta2 = state[1]
-    theta3 = state[2]
-    theta4 = state[3]
-    theta12 = theta2 + theta1
-    theta123 = theta3 + theta12
-    s1 = sin(theta1)
-    s2 = sin(theta2)
-    s3 = sin(theta3)
-    s12 = sin(theta12)
-    s123 = sin(theta123)
-    c1 = cos(theta1)
-    c2 = cos(theta2)
-    c3 = cos(theta3)
-    c12 = cos(theta12)
-    c123 = cos(theta123)
 
     tau1 = 0.0 # Unactuated
     tau = np.array([tau1, tau2, tau3, tau4])
@@ -212,17 +196,43 @@ if __name__ == "__main__":
     state_over_time_star = result.GetSolution(state_over_time)
 
     time_step = 0
-    while time_step < len(state_over_time_star):
+    last_input = 'c'
+    max_time_step = len(state_over_time_star)
+    while time_step < max_time_step:
         state = state_over_time_star[time_step]
+        torque = np.array([i.Evaluate() for i in torque_over_time_star[time_step]])
+        state_d = derivs(state, torque, is_symbolic = False)
+        proposed_next_state = state + TIME_INTERVAL*state_d
+        print("time_step = " + str(time_step))
         print("theta = " + str(state[0:int(STATE_SIZE/2)]))
         print("theta_d = " + str(state[int(STATE_SIZE/2):STATE_SIZE]))
-        print("torques = " + str(torque_over_time_star[time_step]))
+        print("torques = " + str(torque))
+        print("theta_dd = " + str(state_d[int(STATE_SIZE/2):STATE_SIZE]))
+        print("proposed_next_state = " + str(proposed_next_state))
         visualize.visualize(state[0], state[1], state[2])
         print("c = continue, r = reverse, q = quit")
         user_input = input("Input: ")
+
+        if user_input == '':
+            user_input = last_input
         if user_input == 'c':
             time_step += 1
         elif user_input == 'r':
             time_step = max(0, time_step - 1)
         elif user_input == 'q':
             break
+        else:
+            try:
+                increment = int(user_input)
+            except ValueError:
+                print("Not a number")
+                continue
+            time_step = max(min(time_step + increment, max_time_step-1), 0)
+
+        last_input = user_input
+    if not is_success:
+        # https://drake.mit.edu/pydrake/pydrake.solvers.mathematicalprogram.html?highlight=mathematicalprogram#pydrake.solvers.mathematicalprogram.GetInfeasibleConstraints
+        infeasible_constraints = GetInfeasibleConstraints(mp, result)
+        # https://drake.mit.edu/pydrake/pydrake.solvers.mathematicalprogram.html?highlight=mathematicalprogram#pydrake.solvers.mathematicalprogram.MathematicalProgram.AddVisualizationCallback
+        # https://drake.mit.edu/pydrake/pydrake.solvers.mathematicalprogram.html?highlight=mathematicalprogram#pydrake.solvers.mathematicalprogram.MathematicalProgramResult.GetSuboptimalSolution
+    pdb.set_trace()
