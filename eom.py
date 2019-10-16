@@ -6,6 +6,7 @@ from sympy import diff, Symbol, sin, cos, pi, Matrix, sqrt, acos
 from sympy import Eq, solve, trigsimp, simplify, cse
 from sympy import init_printing, pprint, pretty
 import numpy as np
+import dill
 import pdb
 
 from constants import *
@@ -326,6 +327,19 @@ def calc_theta4_dd(
             (theta2, theta3, theta4),
             (theta2_d, theta3_d, theta4_d),
             (tau2, tau3, tau4))
+
+func_dict = {
+    "findTheta": findTheta1,
+    "findFrontWheelPosition": findFrontWheelPosition,
+    "calc_end_effector_force": calc_end_effector_force,
+    "calc_theta2_dd": calc_theta2_dd,
+    "calc_theta3_dd": calc_theta3_dd,
+    "calc_theta4_dd": calc_theta4_dd
+    }
+
+with open("eom.bin", 'r+') as f:
+    # f.truncate()
+    dill.dump(func_dict, f, recurse=True)
 
 if __name__ == "__main__":
     from random import random
