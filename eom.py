@@ -337,9 +337,8 @@ func_dict = {
     "calc_theta4_dd": calc_theta4_dd
     }
 
-with open("eom.bin", 'r+') as f:
-    # f.truncate()
-    dill.dump(func_dict, f, recurse=True)
+# with open("eom.bin", 'wb') as f:
+    # dill.dump(func_dict, f, byref=True, recurse=True)
 
 if __name__ == "__main__":
     from random import random
