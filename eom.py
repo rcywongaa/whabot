@@ -335,11 +335,11 @@ if __name__ == "__main__":
     tic = time.time()
     for i in range(100):
         calc_theta2_dd(
-                random(), random(), random(),
-                random(), random(), random(),
+                random(), random(),
+                random(), random(),
                 random(), random(), random())
         calc_theta1_dd(
-                random(), random(), random(),
-                random(), random(), random(),
+                random(), random(),
+                random(), random(),
                 random(), random(), random())
     print("300 EOM calculation in " + str(time.time() - tic) + "s")
