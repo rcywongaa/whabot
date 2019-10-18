@@ -7,6 +7,7 @@ from sympy import Eq, solve, trigsimp, simplify, cse
 from sympy import init_printing, pprint, pretty
 import numpy as np
 import dill
+from random import random
 import pdb
 
 from constants import *
@@ -237,6 +238,34 @@ rhs = Matrix([rhs1, rhs2])
 eom = Eq(lhs, rhs).subs(substitutions)
 logDuration("Formulate Lagrange", tic)
 
+def solve_calc_theta_dd(
+        actual_theta2, actual_theta3,
+        actual_theta2_d, actual_theta3_d,
+        actual_tau2, actual_tau3, actual_tau4):
+    actual_substitutions = [
+            (theta2_0, actual_theta2),
+            (theta3_0, actual_theta3),
+            (theta2_d_0, actual_theta2_d),
+            (theta3_d_0, actual_theta3_d),
+            (tau2, actual_tau2),
+            (tau3, actual_tau3),
+            (tau4, actual_tau4)]
+    actual_eom = eom.subs(actual_substitutions)
+    actual_theta_dd = solve(actual_eom, theta_dd_0, dict=True, simplify=False, rational=False)
+    actual_theta2_dd = actual_theta_dd[0][theta2_dd_0].evalf()
+    actual_theta3_dd = actual_theta_dd[0][theta3_dd_0].evalf()
+
+    actual_theta1_dd = theta1_dd.subs(substitutions).subs(actual_substitutions + [(theta2_dd_0, actual_theta2_dd), (theta3_dd_0, actual_theta3_dd)])
+    return (actual_theta1_dd, actual_theta2_dd, actual_theta3_dd)
+
+if __name__ == "__main__":
+    tic = time.time()
+    solve_calc_theta_dd(
+            random(), random(),
+            random(), random(),
+            random(), random(), random())
+    logDuration("Solve single instance", tic)
+
 # tic = time.time()
 # eom = trigsimp(eom, method="fu") # Simplify by minimizing trigonometric functions
 # logDuration("Simplify", tic)
@@ -307,8 +336,6 @@ func_dict = {
     # dill.dump(func_dict, f, byref=True, recurse=True)
 
 if __name__ == "__main__":
-    from random import random
-
     tic = time.time()
     for i in range(100):
         calc_theta2_dd(
