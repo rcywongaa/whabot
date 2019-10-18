@@ -2,7 +2,7 @@ import time
 
 from sympy.physics.vector import dynamicsymbols, ReferenceFrame, dot
 from sympy.utilities.lambdify import lambdify
-from sympy import diff, Symbol, sin, cos, pi, Matrix, sqrt, acos
+from sympy import diff, Symbol, sin, cos, pi, Matrix, sqrt, acos, asin
 from sympy import Eq, solve, trigsimp, simplify, cse
 from sympy import init_printing, pprint, pretty
 import numpy as np
@@ -73,6 +73,29 @@ def findTheta1(theta2, theta3, x):
     return theta1_1
     # return theta1_2
 
+def findTheta3(theta1, theta2, x):
+    s1 = sin(theta1)
+    s12 = sin(theta1+theta2)
+    c1 = cos(theta1)
+    c12 = cos(theta1+theta2)
+    #      l_1*c1 + l_2*c12 + l_3*c123 = x
+    #                  c12*c3 - s12*s3 = (x - l_1*c1 - l_2*c12)/l_3
+    n = (x - l_1*c1 - l_2*c12)/l_3
+    #                  c12*c3 = n + s12*s3
+    #                  (c12*c3)**2 = n**2 + 2*n*s12*s3 + (s12*s3)**2
+    #    (c12*c3)**2 + (c12*s3)**2 = n**2 + 2*n*s12*s3 + (s12*s3)**2 + (c12*s3)**2
+    #                       c12**2 = n**2 + 2*n*s12*s3 + (s12**2 + c12**2)*s3**2
+    # (s12**2 + c12**2)*s3**2 + 2*n*s12*s3 + n**2 - c12**2 = 0
+    a = s12**2 + c12**2
+    b = 2*n*s12
+    c = n**2 - c12**2
+    discriminant = b**2 - 4*a*c
+    s3_1 = (-b + sqrt(discriminant))/(2*a)
+    s3_2 = (-b - sqrt(discriminant))/(2*a)
+    theta3_1 = asin(s3_1)
+    theta3_2 = asin(s3_2)
+    return theta3_1
+
 def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
     if is_symbolic:
         sin = pydrake.symbolic.sin
@@ -99,30 +122,30 @@ def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
     return (x, y)
 
 t = Symbol('t')
+theta1 = dynamicsymbols('theta1')
+theta1_d = diff(theta1, t)
+theta1_dd = diff(theta1_d, t)
 theta2 = dynamicsymbols('theta2')
 theta2_d = diff(theta2, t)
 theta2_dd = diff(theta2_d, t)
-theta3 = dynamicsymbols('theta3')
+
+theta3 = findTheta3(theta1, theta2, STEP_POSITION - w_r)
 theta3_d = diff(theta3, t)
 theta3_dd = diff(theta3_d, t)
 
-theta1 = findTheta1(theta2, theta3, STEP_POSITION - w_r)
-theta1_d = diff(theta1, t)
-theta1_dd = diff(theta1_d, t)
+theta = Matrix([theta1, theta2])
+theta_d = Matrix([theta1_d, theta2_d])
+theta_dd = Matrix([theta1_dd, theta2_dd])
 
-theta = Matrix([theta2, theta3])
-theta_d = Matrix([theta2_d, theta3_d])
-theta_dd = Matrix([theta2_dd, theta3_dd])
-
+theta1_0 = Symbol('theta1_0')
+theta1_d_0 = Symbol('theta1_d_0')
+theta1_dd_0 = Symbol('theta1_dd_0')
 theta2_0 = Symbol('theta2_0')
 theta2_d_0 = Symbol('theta2_d_0')
 theta2_dd_0 = Symbol('theta2_dd_0')
-theta3_0 = Symbol('theta3_0')
-theta3_d_0 = Symbol('theta3_d_0')
-theta3_dd_0 = Symbol('theta3_dd_0')
 
-theta_0 = [theta2_0, theta3_0]
-theta_d_0 = [theta2_d_0, theta3_d_0]
+theta_0 = [theta1_0, theta2_0]
+theta_d_0 = [theta1_d_0, theta2_d_0]
 
 # ORDER IS IMPORTANT!
 # We want to substitute theta2_d before theta2 because Derivative(theta2, t) != Derivative(theta2_0, t)
@@ -130,13 +153,13 @@ theta_d_0 = [theta2_d_0, theta3_d_0]
 # Should no longer be necessary: https://github.com/sympy/sympy/issues/17656
 substitutions = [
     (theta2_dd, theta2_dd_0),
-    (theta3_dd, theta3_dd_0),
+    (theta1_dd, theta1_dd_0),
     (theta2_d, theta2_d_0),
-    (theta3_d, theta3_d_0),
+    (theta1_d, theta1_d_0),
     (theta2, theta2_0),
-    (theta3, theta3_0)]
+    (theta1, theta1_0)]
 
-theta_dd_0 = [theta2_dd_0, theta3_dd_0]
+theta_dd_0 = [theta1_dd_0, theta2_dd_0]
 
 tau2 = Symbol('tau2')
 tau3 = Symbol('tau3')
@@ -197,16 +220,16 @@ ee_force_sym = lambdify(
         modules=symbolic_trig)
 
 def calc_end_effector_force(
-        theta2, theta3,
-        theta2_d, theta3_d,
+        theta1, theta2,
+        theta1_d, theta2_d,
         tau2, tau3, tau4, is_symbolic = False):
     if is_symbolic:
         ee_force = ee_force_sym
     else:
         ee_force = ee_force_np
     return ee_force(
-            (theta2, theta3),
-            (theta2_d, theta3_d),
+            (theta1, theta2),
+            (theta1_d, theta2_d),
             (tau2, tau3, tau4))
 
 logDuration("Generate end_effector_from_torques()", tic)
@@ -230,8 +253,8 @@ lhs = (L.jacobian(theta_d).diff(t) - L.jacobian(theta)).T
 # External forces
 force = tau4*w_r*k # Vertical force input force (from wheel)
 
-rhs1 = tau2 + force.dot(P4.diff(theta2, N))
-rhs2 = tau3 + force.dot(P4.diff(theta3, N))
+rhs1 = tau3*theta3.diff(theta1) + force.dot(P4.diff(theta1, N))
+rhs2 = tau2 + force.dot(P4.diff(theta2, N))
 rhs = Matrix([rhs1, rhs2])
 
 eom = Eq(lhs, rhs).subs(substitutions)
@@ -246,8 +269,8 @@ theta_dd_eom = solve(eom, theta_dd_0, dict=True, simplify=False, rational=False)
 logDuration("Solve EOM", tic)
 
 tic = time.time()
+theta1_dd_eom = theta_dd_eom[0][theta1_dd_0]
 theta2_dd_eom = theta_dd_eom[0][theta2_dd_0]
-theta3_dd_eom = theta_dd_eom[0][theta3_dd_0]
 
 theta2_dd_np = lambdify(
         lambda_parameters,
@@ -258,41 +281,41 @@ theta2_dd_sym = lambdify(
         theta2_dd_eom,
         modules=symbolic_trig)
 
-theta3_dd_np = lambdify(
+theta1_dd_np = lambdify(
         lambda_parameters,
-        theta3_dd_eom,
+        theta1_dd_eom,
         modules=numpy_trig)
-theta3_dd_sym = lambdify(
+theta1_dd_sym = lambdify(
         lambda_parameters,
-        theta3_dd_eom,
+        theta1_dd_eom,
         modules=symbolic_trig)
 
 logDuration("Lambidfy EOM", tic)
 
 def calc_theta2_dd(
-        theta2, theta3,
-        theta2_d, theta3_d,
+        theta1, theta2,
+        theta1_d, theta2_d,
         tau2, tau3, tau4, is_symbolic = False):
     if is_symbolic:
         theta2_dd_lambd = theta2_dd_sym
     else:
         theta2_dd_lambd = theta2_dd_np
     return theta2_dd_lambd(
-            (theta2, theta3),
-            (theta2_d, theta3_d),
+            (theta1, theta2),
+            (theta1_d, theta2_d),
             (tau2, tau3, tau4))
 
-def calc_theta3_dd(
-        theta2, theta3,
-        theta2_d, theta3_d,
+def calc_theta1_dd(
+        theta1, theta2,
+        theta1_d, theta2_d,
         tau2, tau3, tau4, is_symbolic = False):
     if is_symbolic:
-        theta3_dd_lambd = theta3_dd_sym
+        theta1_dd_lambd = theta1_dd_sym
     else:
-        theta3_dd_lambd = theta3_dd_np
-    return theta3_dd_lambd(
-            (theta2, theta3),
-            (theta2_d, theta3_d),
+        theta1_dd_lambd = theta1_dd_np
+    return theta1_dd_lambd(
+            (theta1, theta2),
+            (theta1_d, theta2_d),
             (tau2, tau3, tau4))
 
 func_dict = {
@@ -300,7 +323,7 @@ func_dict = {
     "findFrontWheelPosition": findFrontWheelPosition,
     "calc_end_effector_force": calc_end_effector_force,
     "calc_theta2_dd": calc_theta2_dd,
-    "calc_theta3_dd": calc_theta3_dd,
+    "calc_theta1_dd": calc_theta2_dd,
     }
 
 # with open("eom.bin", 'wb') as f:
@@ -315,11 +338,7 @@ if __name__ == "__main__":
                 random(), random(), random(),
                 random(), random(), random(),
                 random(), random(), random())
-        calc_theta3_dd(
-                random(), random(), random(),
-                random(), random(), random(),
-                random(), random(), random())
-        calc_theta4_dd(
+        calc_theta1_dd(
                 random(), random(), random(),
                 random(), random(), random(),
                 random(), random(), random())
