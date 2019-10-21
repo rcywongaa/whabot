@@ -41,7 +41,7 @@ def logDuration(duration_name, tic):
     if __name__ == "__main__":
         print(str(duration_name) + ": " + str(time.time() - tic) + "s")
 
-def findTheta1(theta2, theta3, x):
+def calc_theta1(theta2, theta3, x):
     s2 = sin(theta2)
     s3 = sin(theta3)
     s23 = sin(theta2+theta3)
@@ -74,7 +74,7 @@ def findTheta1(theta2, theta3, x):
     return theta1_1
     # return theta1_2
 
-def findTheta3(theta1, theta2, x):
+def calc_theta3(theta1, theta2, x):
     s1 = sin(theta1)
     s12 = sin(theta1+theta2)
     c1 = cos(theta1)
@@ -97,7 +97,7 @@ def findTheta3(theta1, theta2, x):
     theta3_2 = asin(s3_2)
     return theta3_1
 
-def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
+def calc_front_wheel_position(theta1, theta2, theta3, is_symbolic = True):
     if is_symbolic:
         sin = pydrake.symbolic.sin
         cos = pydrake.symbolic.cos
@@ -130,7 +130,7 @@ theta2 = dynamicsymbols('theta2')
 theta2_d = diff(theta2, t)
 theta2_dd = diff(theta2_d, t)
 
-theta3 = findTheta3(theta1, theta2, STEP_POSITION - w_r)
+theta3 = calc_theta3(theta1, theta2, STEP_POSITION - w_r)
 theta3_d = diff(theta3, t)
 theta3_dd = diff(theta3_d, t)
 
@@ -346,8 +346,8 @@ def calc_theta1_dd(
             (tau2, tau3, tau4))
 
 func_dict = {
-    "findTheta": findTheta1,
-    "findFrontWheelPosition": findFrontWheelPosition,
+    "calc_theta1": calc_theta1,
+    "calc_front_wheel_position": calc_front_wheel_position,
     "calc_end_effector_force": calc_end_effector_force,
     "calc_theta2_dd": calc_theta2_dd,
     "calc_theta1_dd": calc_theta2_dd,
