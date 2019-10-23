@@ -3,7 +3,7 @@ import time
 from sympy.physics.vector import dynamicsymbols, ReferenceFrame, dot
 from sympy.utilities.lambdify import lambdify
 from sympy import diff, Symbol, sin, cos, pi, Matrix, sqrt, acos
-from sympy import Eq, solve, trigsimp, simplify, cse
+from sympy import Eq, solve, trigsimp, simplify
 from sympy import init_printing, pprint, pretty
 import numpy as np
 import dill
@@ -54,8 +54,8 @@ def findTheta1(theta2, theta3, x):
     # Rearrange terms:                                                q_s*s1 + q_c*c1 = x
     q_s = -l_2*s2 - l_3*s23
     q_c = l_1 + l_2*c2 + l_3*c23
-    # Rearrange terms:                                                 q_s*c1 = x - q_c*c1
-    # Square both sides:                                         q_s**2*c1**2 = x**2 - 2*x*q_c*c1 + q_c**2*c1**2
+    # Rearrange terms:                                                 q_s*s1 = x - q_c*c1
+    # Square both sides:                                         q_s**2*s1**2 = x**2 - 2*x*q_c*c1 + q_c**2*c1**2
     # Rearrange terms    (q_c**2 + q_s**2)*c1**2 - 2*x*q_c*c1 + x**2 - q_s**2 = 0
     # Solve quadratic equation for c1
     a = q_c**2 + q_s**2
@@ -71,7 +71,8 @@ def findTheta1(theta2, theta3, x):
     theta1_1 = acos(c1_1)
     theta1_2 = acos(c1_2)
     # return theta1_1, theta1_2
-    return theta1_1
+    # theta1 should be in the range of 0 to -pi
+    return -theta1_1
     # return theta1_2
 
 def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
