@@ -9,19 +9,20 @@ from pydrake.systems.analysis import Simulator
 from pydrake.math import RigidTransform
 
 from constants import *
-import eom
+
+import pdb
 
 def visualize(theta1, theta2, theta3, theta4=0.0, phi=0.0):
-    file_name = "res/stair_climb.sdf"
+    # file_name = "res/stair_climb.sdf"
+    file_name = "res/robot_reduced.sdf"
     builder = DiagramBuilder()
     stair_climb, scene_graph = AddMultibodyPlantSceneGraph(builder)
     # stair_climb.RegisterAsSourceForSceneGraph(scene_graph)
+    print("Loading model file...")
     Parser(plant=stair_climb).AddModelFromFile(file_name)
+    print("Model file loaded")
     # stair_climb.AddForceElement(UniformGravityFieldElement())
 
-    front_wheel_x, front_wheel_y = eom.findFrontWheelPosition(theta1, theta2, theta3)
-    front_wheel_x = front_wheel_x.Evaluate()
-    front_wheel_y = front_wheel_y.Evaluate()
     step = Box(STEP_DEPTH, STEP_WIDTH, STEP_HEIGHT)
     step_pos = RigidTransform([STEP_POSITION + STEP_DEPTH/2.0, 0.0, STEP_HEIGHT/2.0])
 
@@ -61,17 +62,19 @@ def visualize(theta1, theta2, theta3, theta4=0.0, phi=0.0):
     diagram_context = diagram.CreateDefaultContext()
     stair_climb_context = diagram.GetMutableSubsystemContext(stair_climb, diagram_context)
 
-    stair_climb_context.FixInputPort(stair_climb.get_actuation_input_port().get_index(), [0, 0, 0, 0, 0])
+    stair_climb_context.FixInputPort(stair_climb.get_actuation_input_port().get_index(), [0, 0, 0, 0, 0, 0])
 
     theta1_joint = stair_climb.GetJointByName("theta1")
     theta2_joint = stair_climb.GetJointByName("theta2")
     theta3_joint = stair_climb.GetJointByName("theta3")
     theta4_joint = stair_climb.GetJointByName("theta4")
     phi_joint = stair_climb.GetJointByName("phi")
+    front_wheel_slider = stair_climb.GetJointByName("front_wheel_slider")
     theta1_joint.set_angle(context=stair_climb_context, angle=theta1)
     theta2_joint.set_angle(context=stair_climb_context, angle=theta2)
     theta3_joint.set_angle(context=stair_climb_context, angle=theta3)
     theta4_joint.set_angle(context=stair_climb_context, angle=theta4)
+    front_wheel_slider.set_translation(context=stair_climb_context, translation=theta4*w_r)
     phi_joint.set_angle(context=stair_climb_context, angle=phi)
 
     simulator = Simulator(diagram, diagram_context)
@@ -79,3 +82,6 @@ def visualize(theta1, theta2, theta3, theta4=0.0, phi=0.0):
     simulator.set_target_realtime_rate(0.001)
     simulator.Initialize()
     simulator.AdvanceTo(0.0)
+
+if __name__ == "__main__":
+    visualize(0.0, 0.0, 0.0)

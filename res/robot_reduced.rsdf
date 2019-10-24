@@ -1,0 +1,373 @@
+<?xml version='1.0' ?>
+<%
+# erb generation
+# https://bitbucket.org/osrf/gazebo_models/src/b237ea45262f51ff8d72aaa96ef19f1288723c42/cart_rigid_suspension/model.rsdf?at=default&fileviewer=file-view-default
+
+# This is the robot with front wheel converted to a prismatic joint on the surface of the step
+
+require 'yaml'
+constants = YAML.load_file(File.join(__dir__, 'constants.yaml'))
+
+PI = constants['pi']
+
+WHEEL_MASS = constants['wheel_mass']
+WHEEL_RADIUS = constants['wheel_radius']
+WHEEL_THICKNESS = constants['wheel_thickness']
+
+LINK1_MASS = constants['link1_mass']
+LINK1_LENGTH = constants['link1_length']
+LINK1_RADIUS = constants['link1_radius']
+
+MOTOR1_MASS = constants['motor1_mass']
+MOTOR1_RADIUS = constants['motor1_radius']
+MOTOR1_THICKNESS = constants['motor1_thickness']
+
+LINK2_MASS = constants['link2_mass']
+LINK2_LENGTH = constants['link2_length']
+LINK2_RADIUS = constants['link2_radius']
+
+MOTOR2_MASS = constants['motor2_mass']
+MOTOR2_RADIUS = constants['motor2_radius']
+MOTOR2_THICKNESS = constants['motor2_thickness']
+
+LINK3_MASS = constants['link3_mass']
+LINK3_LENGTH = constants['link3_length']
+LINK3_RADIUS = constants['link3_radius']
+
+LINKB_MASS = constants['linkb_mass']
+LINKB_LENGTH = constants['linkb_length']
+LINKB_RADIUS = constants['linkb_radius']
+
+MOTORB_MASS = constants['motorb_mass']
+MOTORB_RADIUS = constants['motorb_radius']
+MOTORB_THICKNESS = constants['motorb_thickness']
+
+BATTERY_MASS = constants['battery_mass']
+BATTERY_RADIUS = constants['battery_radius']
+
+%>
+
+<sdf version='1.6'>
+    <model name='Whabot'>
+        <link name='back_wheel'>
+            <pose>0 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= WHEEL_MASS %></mass>
+                <inertia>
+                    <ixx><%= 1.0/12.0*WHEEL_MASS*(3.0*WHEEL_RADIUS**2 + WHEEL_THICKNESS**2) %></ixx>
+                    <iyy><%= 1.0/2.0 * WHEEL_MASS * WHEEL_RADIUS**2 %></iyy>
+                    <izz><%= 1.0/12.0*WHEEL_MASS*(3.0*WHEEL_RADIUS**2 + WHEEL_THICKNESS**2) %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='back_wheel_vis'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= WHEEL_RADIUS %></radius>
+                        <length><%= WHEEL_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+            <collision name='back_wheel_col'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= WHEEL_RADIUS %></radius>
+                        <length><%= WHEEL_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name='link1'>
+            <pose>0 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= LINK1_MASS %></mass>
+                <inertia>
+                    <ixx>1.0e-20</ixx>
+                    <iyy><%= 1.0/12.0*LINK1_MASS*LINK1_LENGTH**2 %></iyy>
+                    <izz><%= 1.0/12.0*LINK1_MASS*LINK1_LENGTH**2 %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='link1_vis'>
+                <pose><%= LINK1_LENGTH/2.0%> 0 0 0 <%= PI/2.0 %> 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= LINK1_RADIUS %></radius>
+                        <length><%= LINK1_LENGTH %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='motor1'>
+            <pose><%= LINK1_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= MOTOR1_MASS %></mass>
+                <inertia>
+                    <ixx><%= 1.0/12.0*MOTOR1_MASS*(3.0*MOTOR1_RADIUS**2 + MOTOR1_THICKNESS**2) %></ixx>
+                    <iyy><%= 1.0/2.0 * MOTOR1_MASS * MOTOR1_RADIUS**2 %></iyy>
+                    <izz><%= 1.0/12.0*MOTOR1_MASS*(3.0*MOTOR1_RADIUS**2 + MOTOR1_THICKNESS**2) %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='vis_motor1'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= MOTOR1_RADIUS %></radius>
+                        <length><%= MOTOR1_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='link2'>
+            <pose><%= LINK1_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= LINK2_MASS %></mass>
+                <inertia>
+                    <ixx>1.0e-20</ixx>
+                    <iyy><%= 1.0/12.0*LINK2_MASS*LINK2_LENGTH**2 %></iyy>
+                    <izz><%= 1.0/12.0*LINK2_MASS*LINK2_LENGTH**2 %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='link2_vis'>
+                <pose><%= LINK2_LENGTH/2.0%> 0 0 0 <%= PI/2.0 %> 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= LINK2_RADIUS %></radius>
+                        <length><%= LINK2_LENGTH %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='motor2'>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= MOTOR2_MASS %></mass>
+                <inertia>
+                    <ixx><%= 1.0/12.0*MOTOR2_MASS*(3.0*MOTOR2_RADIUS**2 + MOTOR2_THICKNESS**2) %></ixx>
+                    <iyy><%= 1.0/2.0 * MOTOR2_MASS * MOTOR2_RADIUS**2 %></iyy>
+                    <izz><%= 1.0/12.0*MOTOR2_MASS*(3.0*MOTOR2_RADIUS**2 + MOTOR2_THICKNESS**2) %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='vis_motor2'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= MOTOR2_RADIUS %></radius>
+                        <length><%= MOTOR2_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='link3'>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= LINK3_MASS %></mass>
+                <inertia>
+                    <ixx>1.0e-20</ixx>
+                    <iyy><%= 1.0/12.0*LINK3_MASS*LINK3_LENGTH**2 %></iyy>
+                    <izz><%= 1.0/12.0*LINK3_MASS*LINK3_LENGTH**2 %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='link3_vis'>
+                <pose><%= LINK3_LENGTH/2.0%> 0 0 0 <%= PI/2.0 %> 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= LINK3_RADIUS %></radius>
+                        <length><%= LINK3_LENGTH %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='front_wheel'>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH + LINK3_LENGTH %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= WHEEL_MASS %></mass>
+                <inertia>
+                    <ixx><%= 1.0/12.0*WHEEL_MASS*(3.0*WHEEL_RADIUS**2 + WHEEL_THICKNESS**2) %></ixx>
+                    <iyy><%= 1.0/2.0 * WHEEL_MASS * WHEEL_RADIUS**2 %></iyy>
+                    <izz><%= 1.0/12.0*WHEEL_MASS*(3.0*WHEEL_RADIUS**2 + WHEEL_THICKNESS**2) %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='front_wheel_vis'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= WHEEL_RADIUS %></radius>
+                        <length><%= WHEEL_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+            <collision name='front_wheel_col'>
+                <pose>0 0 0 <%= PI/2.0 %> 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= WHEEL_RADIUS %></radius>
+                        <length><%= WHEEL_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name='motorb'>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= MOTORB_MASS %></mass>
+                <inertia>
+                    <ixx><%= 1.0/2.0 * MOTORB_MASS * MOTORB_RADIUS**2 %></ixx>
+                    <iyy><%= 1.0/12.0*MOTORB_MASS*(3.0*MOTORB_RADIUS**2 + MOTORB_THICKNESS**2) %></iyy>
+                    <izz><%= 1.0/12.0*MOTORB_MASS*(3.0*MOTORB_RADIUS**2 + MOTORB_THICKNESS**2) %></izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='vis_motorb'>
+                <pose>0 0 0 0 <%= PI/2.0 %> 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= MOTORB_RADIUS %></radius>
+                        <length><%= MOTORB_THICKNESS %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='linkb'>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 <%= WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= LINKB_MASS %></mass>
+                <inertia>
+                    <ixx><%= 1.0/12.0*LINKB_MASS*LINKB_LENGTH**2 %></ixx>
+                    <iyy><%= 1.0/12.0*LINKB_MASS*LINKB_LENGTH**2 %></iyy>
+                    <izz>1.0e-20</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='linkb_vis'>
+                <pose>0 0 <%= -LINKB_LENGTH/2.0 %> 0 0 0</pose>
+                <geometry>
+                    <cylinder>
+                        <radius><%= LINKB_RADIUS %></radius>
+                        <length><%= LINKB_LENGTH %></length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name='battery'>
+            <pose><%= LINK1_LENGTH + LINK2_LENGTH/2.0 %> 0 <%= -LINKB_LENGTH + WHEEL_RADIUS %> 0 0 0</pose>
+            <inertial>
+                <mass><%= BATTERY_MASS %></mass>
+                <inertia>
+                    <ixx>1.0e-20</ixx>
+                    <iyy>1.0e-20</iyy>
+                    <izz>1.0e-20</izz>
+                    <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+            </inertial>
+            <visual name='battery_vis'>
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <sphere>
+                        <radius><%= BATTERY_RADIUS %></radius>
+                    </sphere>
+                </geometry>
+            </visual>
+        </link>
+
+        <joint name='fix_back_wheel' type='fixed'>
+            <parent>world</parent>
+            <child>back_wheel</child>
+        </joint>
+
+        <joint name='theta1' type='revolute'>
+            <parent>back_wheel</parent>
+            <child>link1</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <!--<initial_position><%= -PI/3.0 %></initial_position>-->
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='motor1_fix' type='fixed'>
+            <parent>link1</parent>
+            <child>motor1</child>
+        </joint>
+
+        <joint name='theta2' type='revolute'>
+            <parent>motor1</parent>
+            <child>link2</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <!--<initial_position><%= PI/3.0 %></initial_position>-->
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='motor2_fix' type='fixed'>
+            <parent>link2</parent>
+            <child>motor2</child>
+        </joint>
+
+        <joint name='theta3' type='revolute'>
+            <parent>motor2</parent>
+            <child>link3</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <!--<initial_position><%= PI/3.0 %></initial_position>-->
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='theta4' type='revolute'>
+            <parent>link3</parent>
+            <child>front_wheel</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 1 0 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='front_wheel_slider' type='prismatic'>
+            <parent>world</parent>
+            <child>front_wheel</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 0 1 0 0 0</xyz>
+            </axis>
+        </joint>
+
+        <joint name='motorb_fix' type='fixed'>
+            <parent>link2</parent>
+            <child>motorb</child>
+        </joint>
+
+        <joint name='battery_fix' type='fixed'>
+            <parent>linkb</parent>
+            <child>battery</child>
+        </joint>
+
+        <joint name='phi' type='revolute'>
+            <parent>motorb</parent>
+            <child>linkb</child>
+            <pose>0 0 0 0 0 0</pose>
+            <axis>
+                <xyz>0 0 1 0 0 0</xyz>
+            </axis>
+        </joint>
+
+    </model>
+</sdf>
+
