@@ -3,10 +3,11 @@ import time
 from sympy.physics.vector import dynamicsymbols, ReferenceFrame, dot
 from sympy.utilities.lambdify import lambdify
 from sympy import diff, Symbol, sin, cos, pi, Matrix, sqrt, acos
-from sympy import Eq, solve, trigsimp, simplify, cse
+from sympy import Eq, solve, trigsimp, simplify
 from sympy import init_printing, pprint, pretty
 import numpy as np
 import dill
+from random import random
 import pdb
 
 from constants import *
@@ -53,8 +54,8 @@ def findTheta1(theta2, theta3, x):
     # Rearrange terms:                                                q_s*s1 + q_c*c1 = x
     q_s = -l_2*s2 - l_3*s23
     q_c = l_1 + l_2*c2 + l_3*c23
-    # Rearrange terms:                                                 q_s*c1 = x - q_c*c1
-    # Square both sides:                                         q_s**2*c1**2 = x**2 - 2*x*q_c*c1 + q_c**2*c1**2
+    # Rearrange terms:                                                 q_s*s1 = x - q_c*c1
+    # Square both sides:                                         q_s**2*s1**2 = x**2 - 2*x*q_c*c1 + q_c**2*c1**2
     # Rearrange terms    (q_c**2 + q_s**2)*c1**2 - 2*x*q_c*c1 + x**2 - q_s**2 = 0
     # Solve quadratic equation for c1
     a = q_c**2 + q_s**2
@@ -70,7 +71,8 @@ def findTheta1(theta2, theta3, x):
     theta1_1 = acos(c1_1)
     theta1_2 = acos(c1_2)
     # return theta1_1, theta1_2
-    return theta1_1
+    # theta1 should be in the range of 0 to -pi
+    return -theta1_1
     # return theta1_2
 
 def findFrontWheelPosition(theta1, theta2, theta3, is_symbolic = True):
@@ -105,17 +107,14 @@ theta2_dd = diff(theta2_d, t)
 theta3 = dynamicsymbols('theta3')
 theta3_d = diff(theta3, t)
 theta3_dd = diff(theta3_d, t)
-theta4 = dynamicsymbols('theta4')
-theta4_d = diff(theta4, t)
-theta4_dd = diff(theta4_d, t)
 
 theta1 = findTheta1(theta2, theta3, STEP_POSITION - w_r)
 theta1_d = diff(theta1, t)
 theta1_dd = diff(theta1_d, t)
 
-theta = Matrix([theta2, theta3, theta4])
-theta_d = Matrix([theta2_d, theta3_d, theta4_d])
-theta_dd = Matrix([theta2_dd, theta3_dd, theta4_dd])
+theta = Matrix([theta2, theta3])
+theta_d = Matrix([theta2_d, theta3_d])
+theta_dd = Matrix([theta2_dd, theta3_dd])
 
 theta2_0 = Symbol('theta2_0')
 theta2_d_0 = Symbol('theta2_d_0')
@@ -123,12 +122,9 @@ theta2_dd_0 = Symbol('theta2_dd_0')
 theta3_0 = Symbol('theta3_0')
 theta3_d_0 = Symbol('theta3_d_0')
 theta3_dd_0 = Symbol('theta3_dd_0')
-theta4_0 = Symbol('theta4_0')
-theta4_d_0 = Symbol('theta4_d_0')
-theta4_dd_0 = Symbol('theta4_dd_0')
 
-theta_0 = [theta2_0, theta3_0, theta4_0]
-theta_d_0 = [theta2_d_0, theta3_d_0, theta4_d_0]
+theta_0 = [theta2_0, theta3_0]
+theta_d_0 = [theta2_d_0, theta3_d_0]
 
 # ORDER IS IMPORTANT!
 # We want to substitute theta2_d before theta2 because Derivative(theta2, t) != Derivative(theta2_0, t)
@@ -137,15 +133,12 @@ theta_d_0 = [theta2_d_0, theta3_d_0, theta4_d_0]
 substitutions = [
     (theta2_dd, theta2_dd_0),
     (theta3_dd, theta3_dd_0),
-    (theta4_dd, theta4_dd_0),
     (theta2_d, theta2_d_0),
     (theta3_d, theta3_d_0),
-    (theta4_d, theta4_d_0),
     (theta2, theta2_0),
-    (theta3, theta3_0),
-    (theta4, theta4_0)]
+    (theta3, theta3_0)]
 
-theta_dd_0 = [theta2_dd_0, theta3_dd_0, theta4_dd_0]
+theta_dd_0 = [theta2_dd_0, theta3_dd_0]
 
 tau2 = Symbol('tau2')
 tau3 = Symbol('tau3')
@@ -194,7 +187,7 @@ J = Matrix([P4.dot(i), P4.dot(k)]).jacobian(theta)
 # x_dd = J*q_dd + J_d*q_d
 # F = m*(J*q_dd + J_d*q_d)
 # F = m*(J*(tau/I) + J_d*q_d)
-q_dd = Matrix([tau[i] / I[i] for i in range(len(tau))])
+q_dd = Matrix([tau2/I_2, tau3/I_3])
 end_effector_force = m_4*((J*q_dd) + J.diff(t)*theta_d)
 ee_force_np = lambdify(
         lambda_parameters,
@@ -206,16 +199,16 @@ ee_force_sym = lambdify(
         modules=symbolic_trig)
 
 def calc_end_effector_force(
-        theta2, theta3, theta4,
-        theta2_d, theta3_d, theta4_d,
+        theta2, theta3,
+        theta2_d, theta3_d,
         tau2, tau3, tau4, is_symbolic = False):
     if is_symbolic:
         ee_force = ee_force_sym
     else:
         ee_force = ee_force_np
     return ee_force(
-            (theta2, theta3, theta4),
-            (theta2_d, theta3_d, theta4_d),
+            (theta2, theta3),
+            (theta2_d, theta3_d),
             (tau2, tau3, tau4))
 
 logDuration("Generate end_effector_from_torques()", tic)
@@ -241,11 +234,38 @@ force = tau4*w_r*k # Vertical force input force (from wheel)
 
 rhs1 = tau2 + force.dot(P4.diff(theta2, N))
 rhs2 = tau3 + force.dot(P4.diff(theta3, N))
-rhs3 = tau4 + force.dot(P4.diff(theta4, N))
-rhs = Matrix([rhs1, rhs2, rhs3])
+rhs = Matrix([rhs1, rhs2])
 
 eom = Eq(lhs, rhs).subs(substitutions)
 logDuration("Formulate Lagrange", tic)
+
+def solve_calc_theta_dd(
+        actual_theta2, actual_theta3,
+        actual_theta2_d, actual_theta3_d,
+        actual_tau2, actual_tau3, actual_tau4):
+    actual_substitutions = [
+            (theta2_0, actual_theta2),
+            (theta3_0, actual_theta3),
+            (theta2_d_0, actual_theta2_d),
+            (theta3_d_0, actual_theta3_d),
+            (tau2, actual_tau2),
+            (tau3, actual_tau3),
+            (tau4, actual_tau4)]
+    actual_eom = eom.subs(actual_substitutions)
+    actual_theta_dd = solve(actual_eom, theta_dd_0, dict=True, simplify=False, rational=False)
+    actual_theta2_dd = actual_theta_dd[0][theta2_dd_0].evalf()
+    actual_theta3_dd = actual_theta_dd[0][theta3_dd_0].evalf()
+
+    actual_theta1_dd = theta1_dd.subs(substitutions).subs(actual_substitutions + [(theta2_dd_0, actual_theta2_dd), (theta3_dd_0, actual_theta3_dd)])
+    return (actual_theta1_dd, actual_theta2_dd, actual_theta3_dd)
+
+if __name__ == "__main__":
+    tic = time.time()
+    solve_calc_theta_dd(
+            random(), random(),
+            random(), random(),
+            random(), random(), random())
+    logDuration("Solve single instance", tic)
 
 # tic = time.time()
 # eom = trigsimp(eom, method="fu") # Simplify by minimizing trigonometric functions
@@ -258,7 +278,6 @@ logDuration("Solve EOM", tic)
 tic = time.time()
 theta2_dd_eom = theta_dd_eom[0][theta2_dd_0]
 theta3_dd_eom = theta_dd_eom[0][theta3_dd_0]
-theta4_dd_eom = theta_dd_eom[0][theta4_dd_0]
 
 theta2_dd_np = lambdify(
         lambda_parameters,
@@ -278,54 +297,32 @@ theta3_dd_sym = lambdify(
         theta3_dd_eom,
         modules=symbolic_trig)
 
-theta4_dd_np = lambdify(
-        lambda_parameters,
-        theta4_dd_eom,
-        modules=numpy_trig)
-theta4_dd_sym = lambdify(
-        lambda_parameters,
-        theta4_dd_eom,
-        modules=symbolic_trig)
-
 logDuration("Lambidfy EOM", tic)
 
 def calc_theta2_dd(
-        theta2, theta3, theta4,
-        theta2_d, theta3_d, theta4_d,
+        theta2, theta3,
+        theta2_d, theta3_d,
         tau2, tau3, tau4, is_symbolic = False):
     if is_symbolic:
         theta2_dd_lambd = theta2_dd_sym
     else:
         theta2_dd_lambd = theta2_dd_np
     return theta2_dd_lambd(
-            (theta2, theta3, theta4),
-            (theta2_d, theta3_d, theta4_d),
+            (theta2, theta3),
+            (theta2_d, theta3_d),
             (tau2, tau3, tau4))
 
 def calc_theta3_dd(
-        theta2, theta3, theta4,
-        theta2_d, theta3_d, theta4_d,
+        theta2, theta3,
+        theta2_d, theta3_d,
         tau2, tau3, tau4, is_symbolic = False):
     if is_symbolic:
         theta3_dd_lambd = theta3_dd_sym
     else:
         theta3_dd_lambd = theta3_dd_np
     return theta3_dd_lambd(
-            (theta2, theta3, theta4),
-            (theta2_d, theta3_d, theta4_d),
-            (tau2, tau3, tau4))
-
-def calc_theta4_dd(
-        theta2, theta3, theta4,
-        theta2_d, theta3_d, theta4_d,
-        tau2, tau3, tau4, is_symbolic = False):
-    if is_symbolic:
-        theta4_dd_lambd = theta4_dd_sym
-    else:
-        theta4_dd_lambd = theta4_dd_np
-    return theta4_dd_lambd(
-            (theta2, theta3, theta4),
-            (theta2_d, theta3_d, theta4_d),
+            (theta2, theta3),
+            (theta2_d, theta3_d),
             (tau2, tau3, tau4))
 
 func_dict = {
@@ -334,15 +331,12 @@ func_dict = {
     "calc_end_effector_force": calc_end_effector_force,
     "calc_theta2_dd": calc_theta2_dd,
     "calc_theta3_dd": calc_theta3_dd,
-    "calc_theta4_dd": calc_theta4_dd
     }
 
 # with open("eom.bin", 'wb') as f:
     # dill.dump(func_dict, f, byref=True, recurse=True)
 
 if __name__ == "__main__":
-    from random import random
-
     tic = time.time()
     for i in range(100):
         calc_theta2_dd(
