@@ -87,6 +87,14 @@ class TestFrontWheelPosition(unittest.TestCase):
         x, y = eom.findFrontWheelPosition(-3.71739739, 11.418647, -14.58469073, is_symbolic = False)
         self.assertAlmostEqual(y, -0.3)
 
+class TestFindTheta1(unittest.TestCase):
+    def test_trapezium_configuration(self):
+        theta2 = np.pi/3
+        theta3 = np.pi/3
+        theta4 = 0.0
+        pdb.set_trace()
+        self.assertAlmostEqual(eom.findTheta1(theta2, theta3, theta4), -np.pi/3)
+
 if __name__ == '__main__':
     unittest.main()
 

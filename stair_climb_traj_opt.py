@@ -18,34 +18,31 @@ TORQUE_SIZE = 3
 JOINT_MOTOR_MAX_TORQUE = 2.0
 HUB_MOTOR_MAX_TORQUE = 20
 MIN_NORMAL_REACTION = 4
-DISCRIMINANT_EPSILON = 1e-10
 DYNAMICS_EPSILON = 1e-5
-
-I_w = 1.0/2.0*m_w*(w_r**2)
 
 TIME_ALLOWED = 1.0
 NUM_TIME_STEPS = 1000
 TIME_INTERVAL = TIME_ALLOWED / NUM_TIME_STEPS
 
-def calc_theta1_dd(state, u, is_symbolic):
-    return eom.calc_theta1_dd(
-            state[0], state[1], state[2],
-            state[4], state[5], state[6],
-            u[0], u[1], u[2], u[3]*w_r,
-            is_symbolic)
-
 def calc_theta2_dd(state, u, is_symbolic):
     return eom.calc_theta2_dd(
             state[0], state[1], state[2],
             state[4], state[5], state[6],
-            u[0], u[1], u[2], u[3]*w_r,
+            u[0], u[1], u[2],
             is_symbolic)
 
 def calc_theta3_dd(state, u, is_symbolic):
     return eom.calc_theta3_dd(
             state[0], state[1], state[2],
             state[4], state[5], state[6],
-            u[0], u[1], u[2], u[3]*w_r,
+            u[0], u[1], u[2],
+            is_symbolic)
+
+def calc_theta4_dd(state, u, is_symbolic):
+    return eom.calc_theta1_dd(
+            state[0], state[1], state[2],
+            state[4], state[5], state[6],
+            u[0], u[1], u[2],
             is_symbolic)
 
 def derivs(state, tau234, is_symbolic = True):
@@ -60,8 +57,7 @@ def derivs(state, tau234, is_symbolic = True):
     tau3 = tau234[1]
     tau4 = tau234[2]
 
-    tau1 = 0.0 # Unactuated
-    tau = np.array([tau1, tau2, tau3, tau4])
+    tau = np.array([tau2, tau3, tau4])
     state_d = np.zeros_like(state)
     state_d[0:4] = state[4:8]
     state_d[4] = calc_theta1_dd(state, tau, is_symbolic)
@@ -108,10 +104,6 @@ if __name__ == "__main__":
     mp.AddConstraint(initial_wheel_position[1] <= 0.0).evaluator().set_description("Constrain initial_wheel_position[1] <= 0.0")
     mp.AddConstraint(initial_wheel_position[1] >= 0.0).evaluator().set_description("Constrain initial_wheel_position[1] >= 0.0")
 
-    # Constrain initial front wheel position
-    # mp.AddConstraint(initial_wheel_position[0] + w_r <= STEP_POSITION)
-    mp.AddConstraint(initial_wheel_position[0] + w_r >= STEP_POSITION).evaluator().set_description("Constrain initial_wheel_position[0] + w_r >= STEP_POSITION")
-
     state_over_time[0] = initial_state
 
     for i in range(NUM_TIME_STEPS-1):
@@ -128,7 +120,6 @@ if __name__ == "__main__":
         theta2_d = next_state[5]
         theta3_d = next_state[6]
         theta4_d = next_state[7]
-        tau1 = 0.0 # Unactuated
         tau2 = tau234[0] # joint motor
         tau3 = tau234[1] # joint motor
         tau4 = tau234[2] # hub motor
@@ -137,16 +128,6 @@ if __name__ == "__main__":
         # mp.AddConstraint(tau2**2 <= JOINT_MOTOR_MAX_TORQUE**2)
         # mp.AddConstraint(tau3**2 <= JOINT_MOTOR_MAX_TORQUE**2)
         # mp.AddConstraint(tau4**2 <= HUB_MOTOR_MAX_TORQUE**2)
-
-        wheel_position = eom.findFrontWheelPosition(theta1, theta2, theta3)
-
-        # Front wheel penetration constraint
-        mp.AddConstraint(wheel_position[0] + w_r >= STEP_POSITION).evaluator().set_description("Constrain wheel_position[0] + w_r >= STEP_POSITION")
-        # mp.AddConstraint(COEFF_FRICTION * (-eom.get_contact_spring_force(wheel_position[0] + w_r)) >= tau4*w_r)
-
-        # Constrain no negative x motion of front wheel
-        # mp.AddConstraint(wheel_position[0] <= initial_wheel_position[0])
-        # mp.AddConstraint(wheel_position[0] >= initial_wheel_position[0])
 
         # constrain_theta123(mp, theta1, theta2, theta3)
 
