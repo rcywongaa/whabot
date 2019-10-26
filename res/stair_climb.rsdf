@@ -296,6 +296,9 @@ BATTERY_RADIUS = constants['battery_radius']
             <pose>0 0 0 0 0 0</pose>
             <axis>
                 <xyz>0 1 0 0 0 0</xyz>
+                <limit>
+                    <effort>0.0</effort>
+                </limit>
             </axis>
         </joint>
 
