@@ -39,40 +39,40 @@ def constrain_theta123(mp, theta1, theta2, theta3):
     mp.AddConstraint(theta3 >= 0.0).evaluator().set_description("Constrain theta3 >= 0.0")
     mp.AddConstraint(theta3 <= np.pi).evaluator().set_description("Constrain theta3 <= np.pi")
 
-class FrontWheelForce(ForceElement):
-    def __init__(self, plant):
-        front_wheel = plant.GetBodyByName("front_wheel")
-        self.input_port_index = 0
-        front_wheel_node_index = front_wheel.index()
-        pdb.set_trace()
-        ForceElement.__init__(self, front_wheel.model_instance())
+# class FrontWheelForce(ForceElement):
+    # def __init__(self, plant):
+        # front_wheel = plant.GetBodyByName("front_wheel")
+        # self.input_port_index = 0
+        # front_wheel_node_index = front_wheel.index()
+        # pdb.set_trace()
+        # ForceElement.__init__(self, front_wheel.model_instance())
 
-    def calcForce(self, context):
-        current_tau4 = self.EvalVectorInput(context, self.input_port_index)[4]
-        return w_r*tau4
+    # def calcForce(self, context):
+        # current_tau4 = self.EvalVectorInput(context, self.input_port_index)[4]
+        # return w_r*tau4
 
-    def DoCalcAndAddForceContribution(self, context, pc, vc, forces):
-        f = self.calcForce(context)
-        mutable_forces = forces.mutable_body_forces()
-        spatial_force = SpatialForce([0, 0, 0], [0, 0, f])
-        mutable_forces[self.front_wheel_node_index] += spatial_force
+    # def DoCalcAndAddForceContribution(self, context, pc, vc, forces):
+        # f = self.calcForce(context)
+        # mutable_forces = forces.mutable_body_forces()
+        # spatial_force = SpatialForce([0, 0, 0], [0, 0, f])
+        # mutable_forces[self.front_wheel_node_index] += spatial_force
 
-    def CalcPotentialEnergy(self, context, pc):
-        return 0.0
+    # def CalcPotentialEnergy(self, context, pc):
+        # return 0.0
 
-    def CalcConservativePower(self, context, pc, vc):
-        return 0.0
+    # def CalcConservativePower(self, context, pc, vc):
+        # return 0.0
 
-    def CalcNonConservativePower(self, context, pc, vc):
-        vel = vc.get_V_WB(self.front_wheel_node_index)
-        z_d = vel.translational()[2]
-        return self.calcForce(context)*z_d
+    # def CalcNonConservativePower(self, context, pc, vc):
+        # vel = vc.get_V_WB(self.front_wheel_node_index)
+        # z_d = vel.translational()[2]
+        # return self.calcForce(context)*z_d
 
 class ConstraintForce(ForceElement):
     def __init__(self, plant):
         self.plant = plant
-        self.theta1_joint_index = plant.GetJointByName("theta1").node_index()
-        ForceElement.__init__(plant.GetBodyByName("front_wheel").model_instance())
+        self.theta1_joint_index = plant.GetJointByName("theta1").index()
+        ForceElement.__init__(self, plant.GetBodyByName("front_wheel").model_instance())
 
     def calcTorque(self, context):
         pdb.set_trace()
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     builder = DiagramBuilder()
     stair_climb, scene_graph = AddMultibodyPlantSceneGraph(builder)
     Parser(plant=stair_climb).AddModelFromFile(file_name)
-    stair_climb.AddForceElement(FrontWheelForce(stair_climb))
+    # stair_climb.AddForceElement(FrontWheelForce(stair_climb))
     stair_climb.AddForceElement(ConstraintForce(stair_climb))
     stair_climb.Finalize()
 
